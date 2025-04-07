@@ -12,7 +12,7 @@ class GTF:
         if os.path.exists(db_path):
             self.db = gffutils.FeatureDB(db_path, keep_order=True)
         else:
-            self.db = gffutils.create_db(FILE_GTF, dbfn=db_path, force=True, keep_order=True, merge_strategy='merge')
+            self.db = gffutils.create_db(gtf_file, dbfn=db_path, force=True, keep_order=True, merge_strategy='merge')
     def all_genes(self):
         """
         Return:
