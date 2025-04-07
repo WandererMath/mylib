@@ -14,12 +14,21 @@ class GTF:
         else:
             self.db = gffutils.create_db(FILE_GTF, dbfn=db_path, force=True, keep_order=True, merge_strategy='merge')
     def all_genes(self):
+        """
+        Return:
+            All gene IDs
+        """
         gene_symbols=[]
         for feature in self.db.features_of_type('gene'):
             gene_symbol = feature.attributes.get('gene_id', [None])[0]  # Using [None] as fallback in case the attribute is missing
             if gene_symbol:
                 gene_symbols.append(gene_symbol)
         return gene_symbols
+    def id2name(self, gene_id):
+        gene_feature = self.db[gene_id]  # Lookup gene feature by ID
+        # Common keys for gene symbol in GTF files: 'gene_name', 'gene_symbol'
+        return gene_feature.attributes.get('gene', [None])[0] 
+
     
 
 ######## Legacy
@@ -66,4 +75,5 @@ if __name__=='__main__':
     #seq=get_seq_from_gene_id("BW25113_RS00035", 1, 50, FILE_FNA, FILE_GTF)
     #print(seq)
     gtf=GTF(FILE_GTF)
-    print(len(gtf.all_genes()))
+    all_genes=gtf.all_genes()
+    print(gtf.id2name(all_genes[0]))
