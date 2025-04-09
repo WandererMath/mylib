@@ -28,8 +28,45 @@ class GTF:
         gene_feature = self.db[gene_id]  # Lookup gene feature by ID
         # Common keys for gene symbol in GTF files: 'gene_name', 'gene_symbol'
         return gene_feature.attributes.get('gene', [None])[0] 
-
     
+    @staticmethod
+    def get_seq(start, end, strand, FILE_FNA):
+        with open(FILE_FNA, 'r') as fna_file:
+            for record in SeqIO.parse(fna_file, 'fasta'):
+                seq=record.seq[start - 1:end]
+                if strand=='+':
+                    return seq # Adjust to 0-based indexing
+                elif strand=="-":
+                    #print('minus')
+                    s=Seq(seq)
+                    s=s.reverse_complement()
+                    return str(s)
+                else:
+                    raise Exception("strand must be \"+\" or \"-\" ")
+
+    def get_start_and_direction(self, gene_id):
+
+        # Retrieve the gene entry by its ID
+        try:
+            gene = self.db[gene_id]
+            start_position= gene.start
+            return start_position, self.db[gene_id].strand
+            #print(f"The start position of gene {gene_id} is {start_position}")
+        except KeyError:
+            print(f"Gene ID {gene_id} not found in the GTF file.")
+
+
+    def get_seq_from_gene_id(self, gene_id, offset1, offset2, fna_path):
+        '''
+        offset2> offest1
+        '''
+        start, direction=self.get_start_and_direction(gene_id)
+        if direction=='+':
+            return self.get_seq(start-offset2, start-offset1, direction,fna_path)
+        elif direction=='-':
+            return self.get_seq(start+offset1, start+offset2, direction,fna_path)
+
+
 
 ######## Legacy
 
@@ -46,11 +83,15 @@ def get_start_and_direction(gene_id, FILE_GTF):
     try:
         gene = db[gene_id]
         start_position= gene.start
-        return start_position,db[gene_id].strand
+        return start_position, db[gene_id].strand
         #print(f"The start position of gene {gene_id} is {start_position}")
     except KeyError:
         print(f"Gene ID {gene_id} not found in the GTF file.")
+    
 
+
+
+### !!!! Problematic for minus strand
 def get_seq(start, end, strand, FILE_FNA):
     with open(FILE_FNA, 'r') as fna_file:
         for record in SeqIO.parse(fna_file, 'fasta'):
@@ -65,7 +106,9 @@ def get_seq(start, end, strand, FILE_FNA):
             return sequence
         
 def get_seq_from_gene_id(gene_id, offset1, offset2, fna_path, gtf_path):
-    # offset2> offest1
+    '''
+      offset2> offest1
+    '''
     start, direction=get_start_and_direction(gene_id, gtf_path)
     return get_seq(start-offset2, start-offset1, direction,fna_path)
 
@@ -75,5 +118,7 @@ if __name__=='__main__':
     #seq=get_seq_from_gene_id("BW25113_RS00035", 1, 50, FILE_FNA, FILE_GTF)
     #print(seq)
     gtf=GTF(FILE_GTF)
-    all_genes=gtf.all_genes()
-    print(gtf.id2name(all_genes[0]))
+    #all_genes=gtf.all_genes()
+    #print(gtf.id2name(all_genes[0]))
+    seq=gtf.get_seq_from_gene_id("BC_RS21510", 1, 50, FILE_FNA)
+    print(seq)
