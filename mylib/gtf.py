@@ -39,8 +39,8 @@ class GTF:
                 elif strand=="-":
                     #print('minus')
                     s=Seq(seq)
-                    #s=s.reverse_complement()
-                    s=s.complement_rna()
+                    s=s.reverse_complement_rna()
+                    #s=s.complement_rna()
                     return str(s)
                 else:
                     raise Exception("strand must be \"+\" or \"-\" ")
