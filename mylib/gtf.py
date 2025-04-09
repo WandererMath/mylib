@@ -51,7 +51,11 @@ class GTF:
         try:
             gene = self.db[gene_id]
             start_position= gene.start
-            return start_position, self.db[gene_id].strand
+            strand=self.db[gene_id].strand
+            if strand=="+":
+                return start_position, strand
+            else:
+                return gene.end, strand
             #print(f"The start position of gene {gene_id} is {start_position}")
         except KeyError:
             print(f"Gene ID {gene_id} not found in the GTF file.")
