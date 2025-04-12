@@ -4,6 +4,9 @@ import gffutils
 
 import os
 
+
+gffutils.FeatureDB.execute
+
 class GTF:
     def __init__(self, gtf_file):
         gtf_path_splitted=gtf_file.split('.')
@@ -71,6 +74,10 @@ class GTF:
         elif direction=='-':
             return self.get_seq(start+offset1, start+offset2, direction,fna_path)
 
+    def name2id(self, name):
+        for id in self.all_genes():
+            if self.id2name(id)==name:
+                return id
 
 
 if __name__=='__main__':
@@ -81,5 +88,9 @@ if __name__=='__main__':
     gtf=GTF(FILE_GTF)
     #all_genes=gtf.all_genes()
     #print(gtf.id2name(all_genes[0]))
-    seq=gtf.get_seq_from_gene_id("BC_RS21510", 1, 50, FILE_FNA)
-    print(seq)
+
+    #seq=gtf.get_seq_from_gene_id("BC_RS21510", 1, 50, FILE_FNA)
+    #print(seq)
+
+    id=gtf.name2id('rpsU')
+    print(id)
