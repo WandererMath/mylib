@@ -5,7 +5,7 @@ import gffutils
 import os
 
 
-gffutils.FeatureDB.execute
+#gffutils.FeatureDB.execute
 
 class GTF:
     def __init__(self, gtf_file):
