@@ -37,11 +37,12 @@ class GTF:
         with open(FILE_FNA, 'r') as fna_file:
             for record in SeqIO.parse(fna_file, 'fasta'):
                 seq=record.seq[start - 1:end]
+                s=Seq(seq)
                 if strand=='+':
-                    return seq # Adjust to 0-based indexing
+                    return s.transcribe() # Adjust to 0-based indexing
                 elif strand=="-":
                     #print('minus')
-                    s=Seq(seq)
+
                     s=s.reverse_complement_rna()
                     #s=s.complement_rna()
                     return str(s)
