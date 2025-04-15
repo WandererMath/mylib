@@ -1,10 +1,14 @@
 from Bio import SeqIO
 from Bio.Seq import Seq
 import gffutils
+import gffutils.attributes
+import gffutils.feature
 
 import os
 
 
+
+gffutils.attributes.Attributes
 #gffutils.FeatureDB.execute
 
 class GTF:
@@ -32,6 +36,33 @@ class GTF:
         # Common keys for gene symbol in GTF files: 'gene_name', 'gene_symbol'
         return gene_feature.attributes.get('gene', [None])[0] 
     
+    def get_info_from_id(self, gene_id):
+        '''
+            Return:
+                A dict
+        '''
+        gene_feature = self.db[gene_id] 
+        gene_feature: gffutils.feature.Feature
+        return gene_feature.attributes.__dict__['_d']
+
+    def save_IDs_info(self, IDs, output, fields=['gene_id', 'gene', 'gene_biotype', 'product', 'go_function']):
+        def get_value(id, key):
+            info=self.get_info_from_id(id)
+            try:
+                # value is a list
+                value=info[key]
+                if len(value)==0:
+                    return ''
+                else:
+                    return ';'.join(v for v in value)
+            except KeyError:
+                return ''
+        with open(output, 'w') as f:
+            f.write(','.join([k for k in fields])+'\n')
+            for id in IDs:
+                line=','.join([get_value(id, key) for key in fields])
+                f.write(line+'\n')
+
     @staticmethod
     def get_seq(start, end, strand, FILE_FNA):
         with open(FILE_FNA, 'r') as fna_file:
@@ -87,11 +118,11 @@ if __name__=='__main__':
     #seq=get_seq_from_gene_id("BW25113_RS00035", 1, 50, FILE_FNA, FILE_GTF)
     #print(seq)
     gtf=GTF(FILE_GTF)
-    #all_genes=gtf.all_genes()
-    #print(gtf.id2name(all_genes[0]))
-
+    all_genes=gtf.all_genes()
+    print(gtf.get_info_from_id(all_genes[5]))
+    gtf.save_IDs_info(all_genes[:100], 'gene_info.csv')
     #seq=gtf.get_seq_from_gene_id("BC_RS21510", 1, 50, FILE_FNA)
     #print(seq)
 
-    id=gtf.name2id('rpsU')
-    print(id)
+    #id=gtf.name2id('rpsU')
+    #print(id)
