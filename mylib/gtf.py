@@ -1,14 +1,14 @@
+import os
+from dataclasses import dataclass
+
 from Bio import SeqIO
 from Bio.Seq import Seq
 import gffutils
 import gffutils.attributes
 import gffutils.feature
 
-import os
 
-
-
-gffutils.attributes.Attributes
+#gffutils.attributes.Attributes
 #gffutils.FeatureDB.execute
 
 class GTF:
@@ -43,6 +43,7 @@ class GTF:
         '''
         gene_feature = self.db[gene_id] 
         gene_feature: gffutils.feature.Feature
+        #breakpoint()
         return gene_feature.attributes.__dict__['_d']
 
     def save_IDs_info(self, IDs, output, fields=['gene_id', 'gene', 'gene_biotype', 'product', 'go_function']):
@@ -70,12 +71,10 @@ class GTF:
                 seq=record.seq[start - 1:end]
                 s=Seq(seq)
                 if strand=='+':
-                    return s.transcribe() # Adjust to 0-based indexing
+                    return s.transcribe() 
                 elif strand=="-":
                     #print('minus')
-
                     s=s.reverse_complement_rna()
-                    #s=s.complement_rna()
                     return str(s)
                 else:
                     raise Exception("strand must be \"+\" or \"-\" ")
@@ -112,17 +111,55 @@ class GTF:
                 return id
 
 
+'''
+    ASD
+L   
+O   
+N   
+G   
+'''
+
+
+@dataclass
+class Aligner:
+    ASD: str
+    pairing_rule: list # list of sets
+    def _nt_pairs(self, a, b)->bool:
+        if any(set([a, b])==rule for rule in self.pairing_rule):
+            return True
+        return False
+    def _pair1(self, seq, n):
+        # align at n-th of the long 
+        # return staring index (of the long) of the longest pairing region and the pairing length
+        tmp={}
+        j=n
+        for i in range(n, len(self.ASD)+n):
+            if self._nt_pairs(seq[i],self.ASD[i-n]):
+                if j in tmp:
+                    tmp[j]+=1
+                else:
+                    tmp[j]=1
+            else:
+                j=n+1
+        max_key = max(tmp, key=tmp.get)
+        max_value = tmp[max_key]
+        return max_key, max_value
+    
+    def pair(self, seq):
+        tmp=[]
+        for i in range(len(seq)-len(self.ASD)+1):
+            r=self._pair1(seq, i)
+            tmp.append(r)
+        return max(tmp, key=lambda x: x[1])
+    def output_pairing(self, seq):
+        i, l=self.pair(seq)
+        return f"{seq[:i]}[{seq[i:i+l]}]{seq[i+l:]}", i, l
+            
+asd_ba_sub=Aligner('UCACCUCCUUUCU', [{'A', 'U'},{'C', 'G'}, {'G', "U"}])
+
 if __name__=='__main__':
     FILE_FNA='GCF_000007825.1_ASM782v1_genomic.fna'
     FILE_GTF='genomic.gtf'
-    #seq=get_seq_from_gene_id("BW25113_RS00035", 1, 50, FILE_FNA, FILE_GTF)
-    #print(seq)
-    gtf=GTF(FILE_GTF)
-    all_genes=gtf.all_genes()
-    print(gtf.get_info_from_id(all_genes[5]))
-    gtf.save_IDs_info(all_genes[:100], 'gene_info.csv')
-    #seq=gtf.get_seq_from_gene_id("BC_RS21510", 1, 50, FILE_FNA)
-    #print(seq)
 
-    #id=gtf.name2id('rpsU')
-    #print(id)
+    print(asd_ba_sub.output_pairing("CCCCUUUUCCC"))
+    
