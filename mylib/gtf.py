@@ -140,7 +140,7 @@ class Aligner:
                 else:
                     tmp[j]=1
             else:
-                j=n+1
+                j=i+1
         max_key = max(tmp, key=tmp.get)
         max_value = tmp[max_key]
         return max_key, max_value
