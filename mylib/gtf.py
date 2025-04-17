@@ -93,6 +93,13 @@ class GTF:
             #print(f"The start position of gene {gene_id} is {start_position}")
         except KeyError:
             print(f"Gene ID {gene_id} not found in the GTF file.")
+    
+    def get_low_high_direction(self, gene_id):
+        try:
+            gene = self.db[gene_id]
+            return gene.start, gene.end, gene.strand
+        except KeyError:
+            print(f"Gene ID {gene_id} not found in the GTF file.")
 
 
     def get_seq_from_gene_id(self, gene_id, offset1, offset2, fna_path):
@@ -104,6 +111,18 @@ class GTF:
             return self.get_seq(start-offset2, start-offset1, direction,fna_path)
         elif direction=='-':
             return self.get_seq(start+offset1, start+offset2, direction,fna_path)
+
+    def get_gene_whole_seq(self, id, fna):
+        # For gtf file, start end positions are inclusive
+        l, h, s= self.get_low_high_direction(id)
+        with open(fna, 'r') as fna_file:
+            for record in SeqIO.parse(fna_file, 'fasta'):
+                seq=record.seq[l:h+1]
+                seq=Seq(seq)
+        if s=="+":
+            return seq.transcribe()
+        else:
+            return seq.reverse_complement_rna()
 
     def name2id(self, name):
         for id in self.all_genes():
@@ -160,6 +179,6 @@ asd_ba_sub=Aligner('UCACCUCCUUUCU', [{'A', 'U'},{'C', 'G'}, {'G', "U"}])
 if __name__=='__main__':
     FILE_FNA='GCF_000007825.1_ASM782v1_genomic.fna'
     FILE_GTF='genomic.gtf'
-
-    print(asd_ba_sub.output_pairing("CCCCUUUUCCC"))
+    gtf=GTF(FILE_GTF)
+    print(gtf.get_gene_whole_seq(gtf.all_genes()[0], FILE_FNA))
     
