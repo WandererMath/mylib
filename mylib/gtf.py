@@ -112,9 +112,13 @@ class GTF:
         elif direction=='-':
             return self.get_seq(start+offset1, start+offset2, direction,fna_path)
 
-    def get_gene_whole_seq(self, id, fna):
+    def get_gene_whole_seq(self, id, fna, extend=0):
         # For gtf file, start end positions are inclusive
         l, h, s= self.get_low_high_direction(id)
+        if s=='+':
+            h+=extend
+        else:
+            l-=extend
         with open(fna, 'r') as fna_file:
             for record in SeqIO.parse(fna_file, 'fasta'):
                 seq=record.seq[l:h+1]
@@ -129,14 +133,6 @@ class GTF:
             if self.id2name(id)==name:
                 return id
 
-
-'''
-    ASD
-L   
-O   
-N   
-G   
-'''
 
 
 @dataclass
