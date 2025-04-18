@@ -45,24 +45,21 @@ class GTF:
         gene_feature: gffutils.feature.Feature
         #breakpoint()
         return gene_feature.attributes.__dict__['_d']
-
-    def save_IDs_info(self, IDs, output, fields=['gene_id', 'gene', 'gene_biotype', 'product', 'go_function']):
-        def get_value(id, key):
-            info=self.get_info_from_id(id)
-            try:
-                # value is a list
-                value=info[key]
-                if len(value)==0:
-                    return ''
-                else:
-                    return ';'.join(v for v in value)
-            except KeyError:
-                return ''
+    
+    def save_IDs_info(self, IDs, output, fields=['gene_id', 'gene', 'gene_biotype', 'product', 'go_function', 'go_process']):        
+        to_write=[]
+        for feature in self.db.features_of_type('CDS'):
+            gene_id = feature.attributes.get('gene_id', [''])[0]  # Using [None] as fallback in case the attribute is missing
+            if gene_id in IDs:
+                values=[]
+                for f in fields:
+                    values_list_serialized=';'.join(feature.attributes.get(f, ['']))
+                    values.append(values_list_serialized)
+                to_write.append(','.join([a for a in values]))
         with open(output, 'w') as f:
             f.write(','.join([k for k in fields])+'\n')
-            for id in IDs:
-                line=','.join([get_value(id, key) for key in fields])
-                f.write(line+'\n')
+            for row in to_write:
+                f.write(row+'\n')
 
     @staticmethod
     def get_seq(start, end, strand, FILE_FNA):
@@ -175,5 +172,5 @@ if __name__=='__main__':
     FILE_FNA='GCF_000007825.1_ASM782v1_genomic.fna'
     FILE_GTF='genomic.gtf'
     gtf=GTF(FILE_GTF)
-    print(gtf.get_gene_whole_seq(gtf.all_genes()[0], FILE_FNA))
-    
+    #print(gtf.get_gene_whole_seq(gtf.all_genes()[0], FILE_FNA))
+    gtf.save_IDs_info(gtf.all_genes()[:100], "gene_info.csv")
