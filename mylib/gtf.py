@@ -170,7 +170,6 @@ class Aligner:
         i, l=self.pair(seq)
         return f"{seq[:i]}[{seq[i:i+l]}]{seq[i+l:]}", i, l
             
-asd_ba_sub=Aligner('UCACCUCCUUUCU', [{'A', 'U'},{'C', 'G'}, {'G', "U"}])
 
 if __name__=='__main__':
     FILE_FNA='GCF_000007825.1_ASM782v1_genomic.fna'
