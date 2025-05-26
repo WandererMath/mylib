@@ -27,3 +27,4 @@ if __name__=='__main__':
     from data import ASD_BA_SUB, WEAK_RNA_RULE
     aligner=Aligner_FS(WEAK_RNA_RULE, ASD_BA_SUB)
     print(aligner.pair('ZZZZZGGAGG', 0) )
+    print(len(ASD_BA_SUB))

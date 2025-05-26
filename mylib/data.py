@@ -1,4 +1,10 @@
 from mylib.gtf import Aligner, GTF
+
+
+
+START_CODONS=['AUG', 'GUG', 'UUG'] # AUG is the only one that codes for Methionine
+
+
 A=-7
 B=25
 C=7

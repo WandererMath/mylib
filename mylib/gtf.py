@@ -7,12 +7,16 @@ import gffutils
 import gffutils.attributes
 import gffutils.feature
 
+from data import START_CODONS
+
 
 #gffutils.attributes.Attributes
 #gffutils.FeatureDB.execute
 
 class GTF:
-    def __init__(self, gtf_file):
+    db: gffutils.FeatureDB
+    fna: Seq
+    def __init__(self, gtf_file, fna_file=None):
         gtf_path_splitted=gtf_file.split('.')
         gtf_path_splitted[-1]='db'
         db_path=".".join(gtf_path_splitted)
@@ -20,6 +24,13 @@ class GTF:
             self.db = gffutils.FeatureDB(db_path, keep_order=True)
         else:
             self.db = gffutils.create_db(gtf_file, dbfn=db_path, force=True, keep_order=True, merge_strategy='merge')
+    
+        if fna_file is not None:
+            with open(fna_file, 'r') as fna_file:
+                for record in SeqIO.parse(fna_file, 'fasta'):
+                    self.fna=Seq(record.seq.transcribe())  # Transcribe the sequence to RNA
+                    break
+
     def all_genes(self):
         """
         Return:
@@ -31,6 +42,21 @@ class GTF:
             if gene_symbol:
                 gene_symbols.append(gene_symbol)
         return gene_symbols
+    
+    def all_start_positions(self):
+        '''
+            Return:
+                {'+':[int, ...], '-':[]}
+        '''
+        results = {'+': [], '-': []}
+        for gene_id in self.all_genes():
+            start, strand = self.get_start_and_direction(gene_id)
+            if strand == '+':
+                results['+'].append(start)
+            elif strand == '-':
+                results['-'].append(start)
+        return results
+
     def id2name(self, gene_id):
         gene_feature = self.db[gene_id]  # Lookup gene feature by ID
         # Common keys for gene symbol in GTF files: 'gene_name', 'gene_symbol'
@@ -129,8 +155,59 @@ class GTF:
         for id in self.all_genes():
             if self.id2name(id)==name:
                 return id
+    
+    def get_all_candidate_start_positions_plus(self):
+        return [i for i in range(len(self.fna) - 2)
+           if self.fna[i:i+3] in START_CODONS]
+    
+    def get_all_candidate_start_positions_minus(self):
+        START_CODONS_REVERSE_COMPLEMENT = [Seq(codon).reverse_complement_rna() for codon in START_CODONS]
+        return [i+3 for i in range(len(self.fna) - 2)
+           if self.fna[i:i+3] in START_CODONS_REVERSE_COMPLEMENT]
 
-
+    def get_tir_by_position(self, position, strand, l=-18, h=9):
+        """
+        Get the TIR sequence around a given position.
+        Args:
+            position (int): The position in the sequence.
+            l (int): Length to extend to the left.
+            h (int): Length to extend to the right.
+        Returns:
+            str: The TIR sequence.
+            None: if not enough sequence available.
+        """
+        if strand == '+':
+            start = max(0, position + l)
+            end = min(len(self.fna), position + h)
+            if end-start!=h-l:
+                return None
+            return str(self.fna[start:end])
+        elif strand == '-':
+            start = max(0, position - h)
+            end = min(len(self.fna), position - l)
+            if end-start!=h-l:
+                return None
+            seq = self.fna[start:end]
+            if any(x in seq for x in ['Y', 'N', 'P']):
+                return None
+            return str(seq.reverse_complement_rna())
+    def prepare_data(self):
+        """
+        Return:
+            [seqs], [labels]
+            label: 1 Gene, 0 Not Gene
+        """
+        positions_plus=self.get_all_candidate_start_positions_plus()
+        positions_minus=self.get_all_candidate_start_positions_minus()
+        tmp=self.all_start_positions()
+        gene_positions_plus=tmp['+']
+        gene_positions_minus=tmp['-']
+        seqs=[self.get_tir_by_position(p, '+') for p in positions_plus if self.get_tir_by_position(p, '+') is not None]\
+            +[self.get_tir_by_position(p, '-') for p in positions_minus if self.get_tir_by_position(p, '+') is not None]
+        labels=[1 if p in gene_positions_plus else 0 for p in positions_plus if self.get_tir_by_position(p, '+') is not None]\
+            +[1 if p in gene_positions_minus else 0 for p in positions_minus if self.get_tir_by_position(p, '+') is not None]
+        assert len(labels)==len(seqs), f"Labels and sequences length mismatch: {len(labels)} != {len(seqs)}"
+        return seqs, labels
 
 @dataclass
 class Aligner:
@@ -171,6 +248,10 @@ class Aligner:
 if __name__=='__main__':
     FILE_FNA='GCF_000007825.1_ASM782v1_genomic.fna'
     FILE_GTF='genomic.gtf'
-    gtf=GTF(FILE_GTF)
-    #print(gtf.get_gene_whole_seq(gtf.all_genes()[0], FILE_FNA))
-    gtf.save_IDs_info(gtf.all_genes()[:100], "gene_info.csv")
+    gtf=GTF(FILE_GTF, FILE_FNA)
+    #print(gtf.fna[:100])
+    #print(gtf.all_start_positions()['-'][-10:])
+    #for p in gtf.get_all_candidate_start_positions_plus()[:100]:
+    #    print(gtf.get_tir_by_position(p, '+'))
+    seqs, labels=gtf.prepare_data()
+    breakpoint()
