@@ -104,13 +104,14 @@ class GTF:
 
     def get_start_and_direction(self, gene_id):
 
-        # Retrieve the gene entry by its ID
+        # !!!
+        ## GTF File:
+        ## Start, End positions are 1-based index. Both ends included.
         try:
             gene = self.db[gene_id]
-            start_position= gene.start
             strand=self.db[gene_id].strand
             if strand=="+":
-                return start_position, strand
+                return gene.start-1, strand
             else:
                 return gene.end, strand
             #print(f"The start position of gene {gene_id} is {start_position}")
@@ -254,4 +255,3 @@ if __name__=='__main__':
     #for p in gtf.get_all_candidate_start_positions_plus()[:100]:
     #    print(gtf.get_tir_by_position(p, '+'))
     seqs, labels=gtf.prepare_data()
-    breakpoint()
