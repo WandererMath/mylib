@@ -203,9 +203,9 @@ class GTF:
         gene_positions_plus=tmp['+']
         gene_positions_minus=tmp['-']
         seqs=[self.get_tir_by_position(p, '+') for p in positions_plus if self.get_tir_by_position(p, '+') is not None]\
-            +[self.get_tir_by_position(p, '-') for p in positions_minus if self.get_tir_by_position(p, '+') is not None]
+            +[self.get_tir_by_position(p, '-') for p in positions_minus if self.get_tir_by_position(p, '-') is not None]
         labels=[1 if p in gene_positions_plus else 0 for p in positions_plus if self.get_tir_by_position(p, '+') is not None]\
-            +[1 if p in gene_positions_minus else 0 for p in positions_minus if self.get_tir_by_position(p, '+') is not None]
+            +[1 if p in gene_positions_minus else 0 for p in positions_minus if self.get_tir_by_position(p, '-') is not None]
         assert len(labels)==len(seqs), f"Labels and sequences length mismatch: {len(labels)} != {len(seqs)}"
         return seqs, labels
 
