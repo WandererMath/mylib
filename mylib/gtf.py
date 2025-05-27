@@ -188,7 +188,7 @@ class GTF:
             if end-start!=h-l:
                 return None
             seq = self.fna[start:end]
-            if any(x in seq for x in ['Y', 'N', 'P']):
+            if any(x in seq for x in ['Y', 'N', 'R']):
                 return None
             return str(seq.reverse_complement_rna())
     def prepare_data(self):
