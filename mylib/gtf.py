@@ -7,8 +7,8 @@ import gffutils
 import gffutils.attributes
 import gffutils.feature
 
-from data import START_CODONS
 
+START_CODONS=['AUG', 'GUG', 'UUG'] # AUG is the only one that codes for Methionine
 
 #gffutils.attributes.Attributes
 #gffutils.FeatureDB.execute
