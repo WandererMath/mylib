@@ -86,6 +86,12 @@ class GTF:
             f.write(','.join([k for k in fields])+'\n')
             for row in to_write:
                 f.write(row+'\n')
+    def id2protein(self, gene_id, field='product'):
+        for feature in self.db.features_of_type('CDS'):
+            if gene_id == feature.attributes.get('gene_id', [''])[0]:
+                return ';'.join(feature.attributes.get(field, ['']))
+
+    
 
     @staticmethod
     def get_seq(start, end, strand, FILE_FNA):
@@ -254,4 +260,5 @@ if __name__=='__main__':
     #print(gtf.all_start_positions()['-'][-10:])
     #for p in gtf.get_all_candidate_start_positions_plus()[:100]:
     #    print(gtf.get_tir_by_position(p, '+'))
-    seqs, labels=gtf.prepare_data()
+    #seqs, labels=gtf.prepare_data()
+    print(gtf.id2protein(gtf.all_genes()[0]))
