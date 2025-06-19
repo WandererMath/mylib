@@ -94,20 +94,7 @@ class GTF:
 
     
 
-    @staticmethod
-    def get_seq(start, end, strand, FILE_FNA):
-        with open(FILE_FNA, 'r') as fna_file:
-            for record in SeqIO.parse(fna_file, 'fasta'):
-                seq=record.seq[start - 1:end]
-                s=Seq(seq)
-                if strand=='+':
-                    return s.transcribe() 
-                elif strand=="-":
-                    #print('minus')
-                    s=s.reverse_complement_rna()
-                    return str(s)
-                else:
-                    raise Exception("strand must be \"+\" or \"-\" ")
+
 
     def get_start_and_direction(self, gene_id):
 
@@ -176,6 +163,7 @@ class GTF:
     def get_seq_from_to(self, start, end, strand, chrom):
         """
         Get the sequence from start to end.
+        Arguments are python 0-based slice index
         Args:
             start (int): Start position.
             end (int): End position.
@@ -200,6 +188,26 @@ class GTF:
             return result
         except KeyError:
             print(f"Gene ID {gene_id} not found in the GTF file.")
+    
+    def get_gene_positions_chrom_strand(self, gene_id):
+        '''
+            Return positions are 0-based index [) ready to use 
+        '''
+        try:
+            gene = self.db[gene_id]
+            return gene.start - 1, gene.end, gene.strand, gene.chrom
+        except KeyError:
+            print(f"Gene ID {gene_id} not found in the GTF file.")
+    
+    def get_seq_by_gene_and_offset(self, gene_id, offset1, offset2):
+        assert offset2 > offset1, "offset2 must be greater than offset1"
+        start, end, strand, chrom = self.get_gene_positions_chrom_strand(gene_id)
+        if strand == '+':
+            return self.get_seq_from_to(start + offset1, start + offset2, strand, chrom)
+        elif strand == '-':
+            return Seq(self.get_seq_from_to(end - offset2, end - offset1, strand, chrom)).reverse_complement_rna()
+        else:
+            raise Exception(f"Strand {strand} not recognized. Only '+' and '-' are allowed.")
 
 
     def get_tir_by_position(self, position, strand, l=-18, h=9):
@@ -279,6 +287,7 @@ class GTF:
         print(f"Only stop codon wrong: {only_stop_codon_wrong}")
         print(f"Both start and stop codon wrong: {both_wrong}")
             
+    
 
 @dataclass
 class Aligner:
