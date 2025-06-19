@@ -27,10 +27,10 @@ class GTF:
             self.db = gffutils.create_db(gtf_file, dbfn=db_path, force=True, keep_order=True, merge_strategy='merge')
     
         if fna_file is not None:
+            self.fna={}
             with open(fna_file, 'r') as fna_file:
                 for record in SeqIO.parse(fna_file, 'fasta'):
-                    self.fna=Seq(record.seq.transcribe())  # Transcribe the sequence to RNA
-                    break
+                    self.fna[record.name]=Seq(record.seq.transcribe())
 
     def all_genes(self):
         """
@@ -173,7 +173,7 @@ class GTF:
         return [i+3 for i in range(len(self.fna) - 2)
            if self.fna[i:i+3] in START_CODONS_REVERSE_COMPLEMENT]
     
-    def get_seq_from_to(self, start, end, strand):
+    def get_seq_from_to(self, start, end, strand, chrom):
         """
         Get the sequence from start to end.
         Args:
@@ -184,16 +184,17 @@ class GTF:
             str: The sequence from start to end.
         """
         if strand == '+':
-            return str(self.fna[start:end].transcribe())
+            return str(self.fna[chrom][start:end].transcribe())
         elif strand == '-':
-            seq = self.fna[start:end]
+            seq = self.fna[chrom][start:end]
             return str(seq.reverse_complement_rna())
     
     def get_gene_seq(self, gene_id, protein_coding=False):
         try:
             gene = self.db[gene_id]
+            #breakpoint()
             # 1-based index
-            result=self.get_seq_from_to(gene.start - 1, gene.end, gene.strand)
+            result=self.get_seq_from_to(gene.start - 1, gene.end, gene.strand, gene.chrom)
             if protein_coding:
                 assert len(result)%3==0
             return result
@@ -319,9 +320,11 @@ if __name__=='__main__':
     FILE_FNA='GCF_000007825.1_ASM782v1_genomic.fna'
     FILE_GTF='genomic.gtf'
     gtf=GTF(FILE_GTF, FILE_FNA)
+
     #print(gtf.fna[:100])
     #print(gtf.all_start_positions()['-'][-10:])
     #for p in gtf.get_all_candidate_start_positions_plus()[:100]:
     #    print(gtf.get_tir_by_position(p, '+'))
     #seqs, labels=gtf.prepare_data()
-    gtf.test()
+    #gtf.test()
+    print(gtf.get_gene_seq(gtf.all_genes()[0]))
