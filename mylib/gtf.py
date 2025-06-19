@@ -9,7 +9,7 @@ import gffutils.feature
 
 
 START_CODONS=['AUG', 'GUG', 'UUG'] # AUG is the only one that codes for Methionine
-
+START_CODONS=['AUG']
 #gffutils.attributes.Attributes
 #gffutils.FeatureDB.execute
 
@@ -171,6 +171,34 @@ class GTF:
         START_CODONS_REVERSE_COMPLEMENT = [Seq(codon).reverse_complement_rna() for codon in START_CODONS]
         return [i+3 for i in range(len(self.fna) - 2)
            if self.fna[i:i+3] in START_CODONS_REVERSE_COMPLEMENT]
+    
+    def get_seq_from_to(self, start, end, strand):
+        """
+        Get the sequence from start to end.
+        Args:
+            start (int): Start position.
+            end (int): End position.
+            strand (str): Strand, either '+' or '-'.
+        Returns:
+            str: The sequence from start to end.
+        """
+        if strand == '+':
+            return str(self.fna[start:end].transcribe())
+        elif strand == '-':
+            seq = self.fna[start:end]
+            return str(seq.reverse_complement_rna())
+    
+    def get_gene_seq(self, gene_id, protein_coding=False):
+        try:
+            gene = self.db[gene_id]
+            # 1-based index
+            result=self.get_seq_from_to(gene.start - 1, gene.end, gene.strand)
+            if protein_coding:
+                assert len(result)%3==0
+            return result
+        except KeyError:
+            print(f"Gene ID {gene_id} not found in the GTF file.")
+
 
     def get_tir_by_position(self, position, strand, l=-18, h=9):
         """
@@ -261,4 +289,8 @@ if __name__=='__main__':
     #for p in gtf.get_all_candidate_start_positions_plus()[:100]:
     #    print(gtf.get_tir_by_position(p, '+'))
     #seqs, labels=gtf.prepare_data()
-    print(gtf.id2protein(gtf.all_genes()[0]))
+    for g in gtf.all_genes():
+        try:
+            print(f">{g}\n{gtf.get_gene_seq(g)}")
+        except AssertionError:
+            print(f"; Gene {g} has an invalid sequence length.")
