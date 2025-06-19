@@ -10,6 +10,7 @@ import gffutils.feature
 
 START_CODONS=['AUG', 'GUG', 'UUG'] # AUG is the only one that codes for Methionine
 START_CODONS=['AUG']
+STOP_CODONS=['UAA', 'UAG', 'UGA']
 #gffutils.attributes.Attributes
 #gffutils.FeatureDB.execute
 
@@ -243,6 +244,40 @@ class GTF:
             +[1 if p in gene_positions_minus else 0 for p in positions_minus if self.get_tir_by_position(p, '-') is not None]
         assert len(labels)==len(seqs), f"Labels and sequences length mismatch: {len(labels)} != {len(seqs)}"
         return seqs, labels
+        
+
+    def test(self):
+        protein_coding=0
+        non_protein_coding=0
+        only_start_codon_wrong=0
+        only_stop_codon_wrong=0
+        both_wrong=0
+        correct=0
+        for g in self.all_genes():
+            try:
+                seq=self.get_gene_seq(g, protein_coding=True)
+                protein_coding+=1
+                start_correct= seq[:3] in START_CODONS 
+                stop_correct=seq[-3:] in STOP_CODONS
+                if start_correct and stop_correct:
+                    correct+=1
+                elif start_correct and not stop_correct:
+                    only_stop_codon_wrong+=1
+                elif not start_correct and stop_correct:
+                    only_start_codon_wrong+=1
+                else:
+                    both_wrong+=1
+
+            except AssertionError:
+                non_protein_coding+=1
+
+        print(f"Potential Protein coding genes: {protein_coding}")
+        print(f"Non-protein coding genes: {non_protein_coding}")
+        print(f"Correct start and stop codon: {correct}")
+        print(f"Only start codon wrong: {only_start_codon_wrong}")
+        print(f"Only stop codon wrong: {only_stop_codon_wrong}")
+        print(f"Both start and stop codon wrong: {both_wrong}")
+            
 
 @dataclass
 class Aligner:
@@ -278,7 +313,7 @@ class Aligner:
     def output_pairing(self, seq):
         i, l=self.pair(seq)
         return f"{seq[:i]}[{seq[i:i+l]}]{seq[i+l:]}", i, l
-            
+
 
 if __name__=='__main__':
     FILE_FNA='GCF_000007825.1_ASM782v1_genomic.fna'
@@ -289,8 +324,4 @@ if __name__=='__main__':
     #for p in gtf.get_all_candidate_start_positions_plus()[:100]:
     #    print(gtf.get_tir_by_position(p, '+'))
     #seqs, labels=gtf.prepare_data()
-    for g in gtf.all_genes():
-        try:
-            print(f">{g}\n{gtf.get_gene_seq(g)}")
-        except AssertionError:
-            print(f"; Gene {g} has an invalid sequence length.")
+    gtf.test()
