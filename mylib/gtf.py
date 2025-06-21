@@ -189,9 +189,11 @@ class GTF:
         except KeyError:
             print(f"Gene ID {gene_id} not found in the GTF file.")
     
-    def get_gene_positions_chrom_strand(self, gene_id):
+    def get_gene_positions_strand_chrom(self, gene_id):
         '''
             Return positions are 0-based index [) ready to use 
+            Return:
+                start, end, strand, chrom
         '''
         try:
             gene = self.db[gene_id]
@@ -201,7 +203,7 @@ class GTF:
     
     def get_seq_by_gene_and_offset(self, gene_id, offset1, offset2):
         assert offset2 > offset1, "offset2 must be greater than offset1"
-        start, end, strand, chrom = self.get_gene_positions_chrom_strand(gene_id)
+        start, end, strand, chrom = self.get_gene_positions_strand_chrom(gene_id)
         if strand == '+':
             return self.get_seq_from_to(start + offset1, start + offset2, strand, chrom)
         elif strand == '-':
