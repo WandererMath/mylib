@@ -24,7 +24,8 @@ class GTF:
         if os.path.exists(db_path):
             self.db = gffutils.FeatureDB(db_path, keep_order=True)
         else:
-            self.db = gffutils.create_db(gtf_file, dbfn=db_path, force=True, keep_order=True, merge_strategy='merge')
+            self.db = gffutils.create_db(gtf_file, dbfn=db_path, force=True, keep_order=True, merge_strategy='merge', \
+                                         id_spec={'gene': 'gene_id'})
     
         if fna_file is not None:
             self.fna={}
@@ -75,7 +76,7 @@ class GTF:
     
     def save_IDs_info(self, IDs, output, fields=['gene_id', 'gene', 'gene_biotype', 'product', 'go_function', 'go_process']):        
         to_write=[]
-        for feature in self.db.features_of_type('CDS'):
+        for feature in self.db.features_of_type('gene'):
             gene_id = feature.attributes.get('gene_id', [''])[0]  # Using [None] as fallback in case the attribute is missing
             if gene_id in IDs:
                 values=[]
@@ -288,8 +289,18 @@ class GTF:
         print(f"Only start codon wrong: {only_start_codon_wrong}")
         print(f"Only stop codon wrong: {only_stop_codon_wrong}")
         print(f"Both start and stop codon wrong: {both_wrong}")
-            
     
+    def id2length(self, gene_id):
+        a, b, _, _=self.get_gene_positions_strand_chrom(gene_id)
+        return b-a    
+            
+    def is_protein(self, gene_id):  
+        feature=self.db[gene_id]    
+        biotype=feature.attributes.get('gene_biotype', [''])[0]
+        if biotype=='protein_coding':
+            return True
+        return False
+
 
 @dataclass
 class Aligner:
@@ -331,11 +342,8 @@ if __name__=='__main__':
     FILE_FNA='GCF_000007825.1_ASM782v1_genomic.fna'
     FILE_GTF='genomic.gtf'
     gtf=GTF(FILE_GTF, FILE_FNA)
+    gene1=gtf.all_genes()[0]
+    gtf.is_protein(gene1)
+    print(gtf.id2length(gene1))
 
-    #print(gtf.fna[:100])
-    #print(gtf.all_start_positions()['-'][-10:])
-    #for p in gtf.get_all_candidate_start_positions_plus()[:100]:
-    #    print(gtf.get_tir_by_position(p, '+'))
-    #seqs, labels=gtf.prepare_data()
-    #gtf.test()
-    print(gtf.get_gene_seq(gtf.all_genes()[0]))
+    
