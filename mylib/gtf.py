@@ -300,6 +300,10 @@ class GTF:
         if biotype=='protein_coding':
             return True
         return False
+    
+    def id2biotype(self, gene_id):
+        feature=self.db[gene_id]
+        return feature.attributes.get('gene_biotype', [''])[0]
 
 
 @dataclass
