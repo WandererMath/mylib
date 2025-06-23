@@ -33,8 +33,8 @@ if __name__ == "__main__":
 def _auto_grouping(samples, key= lambda x: x):
     result={}
     for s in samples:
-        if key(s[0]) not in result:
-            result[key(s[0])]=[s]
+        if key(s)[0] not in result:
+            result[key(s)[0]]=[s]
         else:
-            result[key(s[0])].append(s)
+            result[key(s)[0]].append(s)
     return result
