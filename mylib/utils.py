@@ -30,11 +30,11 @@ if __name__ == "__main__":
         print(closest_binary_search(nums, q))
         break
 
-def _auto_grouping(samples):
+def _auto_grouping(samples, key= lambda x: x):
     result={}
     for s in samples:
-        if s[0] not in result:
-            result[s[0]]=[s]
+        if key(s[0]) not in result:
+            result[key(s[0])]=[s]
         else:
-            result[s[0]].append(s)
+            result[key(s[0])].append(s)
     return result

@@ -26,3 +26,5 @@ class Feature:
         plt.yscale('log')
         plt.savefig(os.path.join(base_path, f"{self.name}-{other.name}.png"), dpi=300)
         plt.cla()
+    def __str__(self):
+        return self.name
