@@ -2,8 +2,8 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from gtf import GTF
-from utils import *
+from .gtf import GTF
+from .utils import *
 # Use Python 3.12. Pysam doesn't support 3.13 yet. 
 # Lazy import 
 # import pysam
@@ -129,14 +129,6 @@ def sam2bedgraph(sam_path, ribo=True, offset=15, cutoff=None):
     return result
 
 
-def _auto_grouping(samples):
-    result={}
-    for s in samples:
-        if s[0] not in result:
-            result[s[0]]=[s]
-        else:
-            result[s[0]].append(s)
-    return result
 
 def bedgraph_for_all_samples(path, ribo=True, gtf: GTF=None, cutoff=None):
     path=os.path.abspath(path)

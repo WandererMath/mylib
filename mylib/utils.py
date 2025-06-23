@@ -29,3 +29,12 @@ if __name__ == "__main__":
     for q in queries:
         print(closest_binary_search(nums, q))
         break
+
+def _auto_grouping(samples):
+    result={}
+    for s in samples:
+        if s[0] not in result:
+            result[s[0]]=[s]
+        else:
+            result[s[0]].append(s)
+    return result
