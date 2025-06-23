@@ -18,7 +18,7 @@ class Feature:
         self.name=os.path.basename(path).split('.')[0]
         self.gene_count = {}
         for g, c in zip(self.gene_ids, self.counts):
-            self.gene_count[g]=self.counts
+            self.gene_count[g]=c
     def scatter_plot(self, other, base_path):
         os.system(f'mkdir -p {base_path}')
         plt.scatter(self.counts, other.counts)
