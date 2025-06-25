@@ -19,6 +19,15 @@ def closest_binary_search(nums_sorted, x):
     else:
         return before
 
+def _auto_grouping(samples, key= lambda x: x):
+    result={}
+    for s in samples:
+        if key(s)[0] not in result:
+            result[key(s)[0]]=[s]
+        else:
+            result[key(s)[0]].append(s)
+    return result
+
 if __name__ == "__main__":
     # Example usage:
     nums = [10, 22, 14, 3, 76, 54]
@@ -30,11 +39,3 @@ if __name__ == "__main__":
         print(closest_binary_search(nums, q))
         break
 
-def _auto_grouping(samples, key= lambda x: x):
-    result={}
-    for s in samples:
-        if key(s)[0] not in result:
-            result[key(s)[0]]=[s]
-        else:
-            result[key(s)[0]].append(s)
-    return result
