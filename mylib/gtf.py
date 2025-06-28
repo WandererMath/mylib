@@ -170,6 +170,7 @@ class GTF:
             strand (str): Strand, either '+' or '-'.
         Returns:
             str: The sequence from start to end.
+            Already reversed complemented if strand is '-'
         """
         if strand == '+':
             return str(self.fna[chrom][start:end].transcribe())
@@ -211,7 +212,7 @@ class GTF:
         if strand == '+':
             return self.get_seq_from_to(start + offset1, start + offset2, strand, chrom)
         elif strand == '-':
-            return Seq(self.get_seq_from_to(start - offset2, start - offset1, strand, chrom)).reverse_complement_rna()
+            return self.get_seq_from_to(end - offset2, end - offset1, strand, chrom)
         else:
             raise Exception(f"Strand {strand} not recognized. Only '+' and '-' are allowed.")
 
