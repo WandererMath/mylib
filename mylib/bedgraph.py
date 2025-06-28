@@ -4,6 +4,7 @@ import pandas as pd
 
 from .gtf import GTF
 from .utils import *
+from .utils import _auto_grouping
 # Use Python 3.12. Pysam doesn't support 3.13 yet. 
 # Lazy import 
 # import pysam
@@ -46,7 +47,7 @@ class Feature:
             self.name='Ribo-'+self.name
 
 
-def sam2bedgraph(sam_path, ribo=True, offset=15, cutoff=None):
+def sam2bedgraph(sam_path, ribo=True, offset=14, cutoff=None):
     import pysam
     sam_path=os.path.abspath(sam_path)
     FIRST_LINE='track type=bedGraph\n'
@@ -84,8 +85,9 @@ def sam2bedgraph(sam_path, ribo=True, offset=15, cutoff=None):
                 result[strand][chrom] = {} 
                 
             if ribo:
+                start+=1
                 if strand=='+':
-                    pos= end-offset -1
+                    pos= end-offset
                 else:
                     pos= start+offset 
             else:
@@ -335,11 +337,11 @@ def filter_sams(path, t=23):
 
 if __name__ == "__main__":
     print("This is the mylib/bedgraph.py module.")
-    SAM_FOLDER='/fs/ess/PAS2967/S21/RNA-seq/bowtie'
+    SAM_FOLDER='/fs/ess/PAS2967/S21/RNA-seq/bowtie23'
     FNA='/fs/ess/PAS2967/S21/reference/GCF_000092025.1_ASM9202v1_genomic.fna'
     GTF_FILE='/fs/ess/PAS2967/S21/reference/genomic.gtf'
     gtf= GTF(GTF_FILE, FNA)
-    filter_sams(SAM_FOLDER, t=23)
+    bedgraph_for_all_samples(SAM_FOLDER, t=23)
     #bedgraph_for_all_samples(SAM_FOLDER, ribo=True, gtf=gtf, cutoff=23)
 
     #gtf=GTF('/users/PAS0291/dengyw144/Fredrick008/ref/genomic.gtf', '/users/PAS0291/dengyw144/Fredrick008/ref/GCF_000750555.1_ASM75055v1_genomic.fna')

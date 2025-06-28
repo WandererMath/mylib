@@ -57,16 +57,20 @@ def _metagene_1_chrom(chrom, df, start_end_list, direction):
                 next_gene_flag = True
             if next_gene_flag:
                 # Save previous gene's results
+                n= counter/gene_length *100
                 for offset in result_tmp:
+                    if counter<100:
+                        break
                     if offset not in result:
                         result[offset] = 0
-                    result[offset] += result_tmp[offset] / max(counter/gene_length, 1)
+                    result[offset] += result_tmp[offset] / n
                 # Clear cache
                 result_tmp={}
+                counter=0
 
             target_start, target_end = start_end_list[ptr_gtf]
             if pos >= target_start:
-                counter+=1
+                counter+=v
             offset = pos - target_start
             gene_length = target_end - target_start + 1
             result_tmp[offset]=v
@@ -106,6 +110,7 @@ def _plot_metagene(result, chrom, direction):
         plt.axvline(x=xtick, color='gray', linestyle='--', linewidth=0.7)
     plt.gca().set_xlim([min(X), max(X)])
 
+    plt.title('5\' End')
     plt.savefig(f'{chrom}{direction}.pdf')
     plt.close()
 

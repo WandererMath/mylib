@@ -203,6 +203,10 @@ class GTF:
             print(f"Gene ID {gene_id} not found in the GTF file.")
     
     def get_seq_by_gene_and_offset(self, gene_id, offset1, offset2):
+        '''
+        Length= offset2 - offset1
+        1= AUG's A
+        '''
         assert offset2 > offset1, "offset2 must be greater than offset1"
         start, end, strand, chrom = self.get_gene_positions_strand_chrom(gene_id)
         if strand == '+':
@@ -304,6 +308,18 @@ class GTF:
     def id2biotype(self, gene_id):
         feature=self.db[gene_id]
         return feature.attributes.get('gene_biotype', [''])[0]
+    def gene_chrom_summary(self):
+        genes= self.all_genes()
+        summary = {}
+        for gene_id in genes:
+            feature = self.db[gene_id]
+            chrom = feature.chrom
+            if chrom not in summary:
+                summary[chrom] = 0
+            summary[chrom]+=1
+        for chrom in summary:
+            print( f"{chrom}: {summary[chrom]} ")
+        return summary
 
 
 @dataclass

@@ -1,0 +1,5 @@
+This is the mylib/bedgraph.py module.
+NC_003062.2: 2769 
+NC_003063.2: 1845 
+NC_003064.2: 525 
+NC_003065.3: 193 
