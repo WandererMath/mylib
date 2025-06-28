@@ -12,4 +12,5 @@ class TestSeq(unittest.TestCase):
         seq= self.gtf.get_seq_by_gene_and_offset(gene, -3, 3)
         print(seq)
 
-    
+    def test_get_gene_info(self):
+        self.gtf.save_IDs_info(self.gtf.all_genes(), 'all_genes.csv')

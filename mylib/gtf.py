@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 
+import pandas as pd
 from Bio import SeqIO
 from Bio.Seq import Seq
 import gffutils
@@ -25,7 +26,7 @@ class GTF:
             self.db = gffutils.FeatureDB(db_path, keep_order=True)
         else:
             self.db = gffutils.create_db(gtf_file, dbfn=db_path, force=True, keep_order=True, merge_strategy='merge', \
-                                         id_spec={'gene': 'gene_id'})
+                                         id_spec={'CDS':'gene_id'})
     
         if fna_file is not None:
             self.fna={}
@@ -75,19 +76,17 @@ class GTF:
         return gene_feature.attributes.__dict__['_d']
     
     def save_IDs_info(self, IDs, output, fields=['gene_id', 'gene', 'gene_biotype', 'product', 'go_function', 'go_process']):        
-        to_write=[]
-        for feature in self.db.features_of_type('gene'):
-            gene_id = feature.attributes.get('gene_id', [''])[0]  # Using [None] as fallback in case the attribute is missing
-            if gene_id in IDs:
-                values=[]
-                for f in fields:
-                    values_list_serialized=';'.join(feature.attributes.get(f, ['']))
-                    values.append(values_list_serialized)
-                to_write.append(','.join([a for a in values]))
-        with open(output, 'w') as f:
-            f.write(','.join([k for k in fields])+'\n')
-            for row in to_write:
-                f.write(row+'\n')
+        # df=[[self.db[g].attributes.get(f, [''])[0] for f in fields] for g in IDs]
+        df=[]
+        for g in IDs:
+            try: 
+                df.append([self.db[g].attributes.get(f, [''])[0] for f in fields])
+            except:
+                pass
+        df=pd.DataFrame(df, columns=fields)
+        df.to_csv(output, index=False, header=True)
+
+
     def id2protein(self, gene_id, field='product'):
         for feature in self.db.features_of_type('CDS'):
             if gene_id == feature.attributes.get('gene_id', [''])[0]:
