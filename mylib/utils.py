@@ -28,14 +28,30 @@ def _auto_grouping(samples, key= lambda x: x):
             result[key(s)[0]].append(s)
     return result
 
-if __name__ == "__main__":
-    # Example usage:
-    nums = [10, 22, 14, 3, 76, 54]
-    nums = sorted(nums)
+# if __name__ == "__main__":
+#     # Example usage:
+#     nums = [10, 22, 14, 3, 76, 54]
+#     nums = sorted(nums)
     
 
-    queries = [5, 50, 1, 100]
-    for q in queries:
-        print(closest_binary_search(nums, q))
-        break
+#     queries = [5, 50, 1, 100]
+#     for q in queries:
+#         print(closest_binary_search(nums, q))
+#         break
 
+
+
+def rna_encoding(seq):
+    import numpy as np
+
+    # Define one-hot mapping
+    mapping = {'A': [1, 0, 0, 0],
+            'U': [0, 1, 0, 0],
+            'G': [0, 0, 1, 0],
+            'C': [0, 0, 0, 1]}
+
+    # One-hot encode each nucleotide
+    one_hot = np.array([mapping[nt] for nt in seq])  # shape (30, 4)
+
+    # Transpose to get shape (4, 30)
+    return one_hot.T

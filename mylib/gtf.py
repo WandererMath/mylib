@@ -1,5 +1,7 @@
 import os
 from dataclasses import dataclass
+from warnings import warn
+from random import random
 
 import pandas as pd
 from Bio import SeqIO
@@ -12,10 +14,12 @@ import gffutils.feature
 START_CODONS=['AUG', 'GUG', 'UUG'] # AUG is the only one that codes for Methionine
 START_CODONS=['AUG']
 STOP_CODONS=['UAA', 'UAG', 'UGA']
-#gffutils.attributes.Attributes
-#gffutils.FeatureDB.execute
 
 class GTF:
+    '''
+    CDS as key
+    Needs to write a new class if rRNA seqs are needed.
+    '''
     db: gffutils.FeatureDB
     fna: Seq
     def __init__(self, gtf_file, fna_file=None):
@@ -40,29 +44,15 @@ class GTF:
             All gene IDs
         """
         gene_symbols=[]
-        for feature in self.db.features_of_type('gene'):
+        for feature in self.db.features_of_type('CDS'):
             gene_symbol = feature.attributes.get('gene_id', [None])[0]  # Using [None] as fallback in case the attribute is missing
             if gene_symbol:
                 gene_symbols.append(gene_symbol)
         return gene_symbols
-    
-    def all_start_positions(self):
-        '''
-            Return:
-                {'+':[int, ...], '-':[]}
-        '''
-        results = {'+': [], '-': []}
-        for gene_id in self.all_genes():
-            start, strand = self.get_start_and_direction(gene_id)
-            if strand == '+':
-                results['+'].append(start)
-            elif strand == '-':
-                results['-'].append(start)
-        return results
+
 
     def id2name(self, gene_id):
-        gene_feature = self.db[gene_id]  # Lookup gene feature by ID
-        # Common keys for gene symbol in GTF files: 'gene_name', 'gene_symbol'
+        gene_feature = self.db[gene_id]
         return gene_feature.attributes.get('gene', [None])[0] 
     
     def get_info_from_id(self, gene_id):
@@ -88,78 +78,20 @@ class GTF:
 
 
     def id2protein(self, gene_id, field='product'):
-        for feature in self.db.features_of_type('CDS'):
-            if gene_id == feature.attributes.get('gene_id', [''])[0]:
-                return ';'.join(feature.attributes.get(field, ['']))
-
-    
-
-
-
-    def get_start_and_direction(self, gene_id):
-
-        # !!!
-        ## GTF File:
-        ## Start, End positions are 1-based index. Both ends included.
-        try:
-            gene = self.db[gene_id]
-            strand=self.db[gene_id].strand
-            if strand=="+":
-                return gene.start-1, strand
-            else:
-                return gene.end, strand
-            #print(f"The start position of gene {gene_id} is {start_position}")
-        except KeyError:
-            print(f"Gene ID {gene_id} not found in the GTF file.")
-    
-    def get_low_high_direction(self, gene_id):
-        try:
-            gene = self.db[gene_id]
-            return gene.start, gene.end, gene.strand
-        except KeyError:
-            print(f"Gene ID {gene_id} not found in the GTF file.")
-
-
-    def get_seq_from_gene_id(self, gene_id, offset1, offset2, fna_path):
-        '''
-        offset2> offest1
-        '''
-        start, direction=self.get_start_and_direction(gene_id)
-        if direction=='+':
-            return self.get_seq(start-offset2, start-offset1, direction,fna_path)
-        elif direction=='-':
-            return self.get_seq(start+offset1, start+offset2, direction,fna_path)
-
-    def get_gene_whole_seq(self, id, fna, extend=0):
-        # For gtf file, start end positions are inclusive
-        l, h, s= self.get_low_high_direction(id)
-        if s=='+':
-            h+=extend
+        info_dict=self.get_info_from_id(gene_id)
+        if field in info_dict:
+            return info_dict[field][0]
         else:
-            l-=extend
-        with open(fna, 'r') as fna_file:
-            for record in SeqIO.parse(fna_file, 'fasta'):
-                seq=record.seq[l:h+1]
-                seq=Seq(seq)
-        if s=="+":
-            return seq.transcribe()
-        else:
-            return seq.reverse_complement_rna()
+            return None
 
     def name2id(self, name):
         for id in self.all_genes():
             if self.id2name(id)==name:
                 return id
+            
     
-    def get_all_candidate_start_positions_plus(self):
-        return [i for i in range(len(self.fna) - 2)
-           if self.fna[i:i+3] in START_CODONS]
     
-    def get_all_candidate_start_positions_minus(self):
-        START_CODONS_REVERSE_COMPLEMENT = [Seq(codon).reverse_complement_rna() for codon in START_CODONS]
-        return [i+3 for i in range(len(self.fna) - 2)
-           if self.fna[i:i+3] in START_CODONS_REVERSE_COMPLEMENT]
-    
+    ### Chrom Considered
     def get_seq_from_to(self, start, end, strand, chrom):
         """
         Get the sequence from start to end.
@@ -215,9 +147,43 @@ class GTF:
             return self.get_seq_from_to(end - offset2, end - offset1, strand, chrom)
         else:
             raise Exception(f"Strand {strand} not recognized. Only '+' and '-' are allowed.")
+    ##############
 
 
-    def get_tir_by_position(self, position, strand, l=-18, h=9):
+    ## ML Data Preparation
+    
+        
+    def all_start_positions(self, chrom):
+        '''
+            Return:
+                {'+':[int, ...], '-':[]}
+        '''
+        results = {'+': [], '-': []}
+        for gene_id in self.all_genes():
+            start, strand = self.get_start_and_direction(gene_id)
+            if self.db[gene_id].chrom == chrom:
+                if strand == '+':
+                    results['+'].append(start)
+                elif strand == '-':
+                    results['-'].append(start)
+        return results
+    
+    def get_all_candidate_start_positions(self, chrom, strand):
+        fna=self.fna[chrom]
+        if strand=='+':
+            return [i for i in range(len(fna) - 2)
+            if fna[i:i+3] in START_CODONS]
+        
+        elif strand=='-':
+            START_CODONS_REVERSE_COMPLEMENT = [Seq(codon).reverse_complement_rna() for codon in START_CODONS]
+            return [i+3 for i in range(len(fna) - 2)
+            if fna[i:i+3] in START_CODONS_REVERSE_COMPLEMENT]
+        
+        else:
+            raise ValueError(f"Strand {strand} not recognized. Only '+' and '-' are allowed.")
+
+
+    def get_tir_by_position(self, position,chrom,  strand, l=-18, h=9):
         """
         Get the TIR sequence around a given position.
         Args:
@@ -228,39 +194,58 @@ class GTF:
             str: The TIR sequence.
             None: if not enough sequence available.
         """
+        fna=self.fna[chrom]
         if strand == '+':
             start = max(0, position + l)
-            end = min(len(self.fna), position + h)
+            end = min(len(fna), position + h)
             if end-start!=h-l:
                 return None
-            return str(self.fna[start:end])
+            return str(fna[start:end])
         elif strand == '-':
             start = max(0, position - h)
-            end = min(len(self.fna), position - l)
+            end = min(len(fna), position - l)
             if end-start!=h-l:
                 return None
-            seq = self.fna[start:end]
+            seq = fna[start:end]
             if any(x in seq for x in ['Y', 'N', 'R']):
                 return None
             return str(seq.reverse_complement_rna())
+    
     def prepare_data(self):
         """
         Return:
             [seqs], [labels]
             label: 1 Gene, 0 Not Gene
         """
-        positions_plus=self.get_all_candidate_start_positions_plus()
-        positions_minus=self.get_all_candidate_start_positions_minus()
-        tmp=self.all_start_positions()
-        gene_positions_plus=tmp['+']
-        gene_positions_minus=tmp['-']
-        seqs=[self.get_tir_by_position(p, '+') for p in positions_plus if self.get_tir_by_position(p, '+') is not None]\
-            +[self.get_tir_by_position(p, '-') for p in positions_minus if self.get_tir_by_position(p, '-') is not None]
-        labels=[1 if p in gene_positions_plus else 0 for p in positions_plus if self.get_tir_by_position(p, '+') is not None]\
-            +[1 if p in gene_positions_minus else 0 for p in positions_minus if self.get_tir_by_position(p, '-') is not None]
+        seqs=[]
+        labels=[]
+        for chrom in self.fna:
+            tmp=self.all_start_positions(chrom)
+            for strand in ['+', '-']:
+                position= self.get_all_candidate_start_positions(chrom, strand)
+                gene_position=tmp[strand]
+                # seqs+=[self.get_tir_by_position(p, chrom,  strand) for p in position if self.get_tir_by_position(p, chrom, strand) is not None]
+                # labels+=[1 if p in gene_position else 0 for p in position if self.get_tir_by_position(p, chrom, strand) is not None]
+                tmp_seqs=[]
+                tmp_labels=[]
+                for p in position:
+                    seq=self.get_tir_by_position(p, chrom, strand)
+                    if seq is not None:
+                        label=1 if p in gene_position else 0
+                        # Balance 
+                        if label==1 or random()<0.0224: # 10% of non-gene sequences
+                            tmp_seqs.append(seq)
+                            tmp_labels.append(label)
+                seqs+=tmp_seqs
+                labels+=tmp_labels
         assert len(labels)==len(seqs), f"Labels and sequences length mismatch: {len(labels)} != {len(seqs)}"
         return seqs, labels
-        
+    
+    def prep_data_encoded(self):
+        seqs, labels=self.prepare_data()
+        from mylib.utils import rna_encoding
+        seqs_encoded=[rna_encoding(seq) for seq in seqs]
+        return seqs_encoded, labels
 
     def test(self):
         protein_coding=0
@@ -298,7 +283,8 @@ class GTF:
         a, b, _, _=self.get_gene_positions_strand_chrom(gene_id)
         return b-a    
             
-    def is_protein(self, gene_id):  
+    def is_protein(self, gene_id): 
+        warn("Deprecated") 
         feature=self.db[gene_id]    
         biotype=feature.attributes.get('gene_biotype', [''])[0]
         if biotype=='protein_coding':
@@ -320,6 +306,66 @@ class GTF:
         for chrom in summary:
             print( f"{chrom}: {summary[chrom]} ")
         return summary
+
+
+    def get_start_and_direction(self, gene_id):
+
+        # !!!
+        ## GTF File:
+        ## Start, End positions are 1-based index. Both ends included.
+        try:
+            gene = self.db[gene_id]
+            strand=self.db[gene_id].strand
+            if strand=="+":
+                return gene.start-1, strand
+            else:
+                return gene.end, strand
+            #print(f"The start position of gene {gene_id} is {start_position}")
+        except KeyError:
+            print(f"Gene ID {gene_id} not found in the GTF file.")
+
+    #####################################################
+    ## Deprecated methods
+    #####################################################
+
+    
+    def get_low_high_direction(self, gene_id):
+        warn("Deprecated", category=UserWarning)
+        try:
+            gene = self.db[gene_id]
+            return gene.start, gene.end, gene.strand
+        except KeyError:
+            print(f"Gene ID {gene_id} not found in the GTF file.")
+
+
+    def get_seq_from_gene_id(self, gene_id, offset1, offset2, fna_path):
+        '''
+        offset2> offest1
+        '''
+        warn("Deprecated. Chrom Problem", category=UserWarning)
+        start, direction=self.get_start_and_direction(gene_id)
+        if direction=='+':
+            return self.get_seq(start-offset2, start-offset1, direction,fna_path)
+        elif direction=='-':
+            return self.get_seq(start+offset1, start+offset2, direction,fna_path)
+
+    def get_gene_whole_seq(self, id, fna, extend=0):
+        # For gtf file, start end positions are inclusive
+        warn("Deprecated", category=UserWarning)
+        l, h, s= self.get_low_high_direction(id)
+        if s=='+':
+            h+=extend
+        else:
+            l-=extend
+        with open(fna, 'r') as fna_file:
+            for record in SeqIO.parse(fna_file, 'fasta'):
+                seq=record.seq[l:h+1]
+                seq=Seq(seq)
+        if s=="+":
+            return seq.transcribe()
+        else:
+            return seq.reverse_complement_rna()
+
 
 
 @dataclass

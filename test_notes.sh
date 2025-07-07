@@ -1,0 +1,1 @@
+python -m unittest tests.test_gtf.TestGTF.test_prep_data_encoded
