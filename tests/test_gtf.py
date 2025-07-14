@@ -31,3 +31,9 @@ class TestGTF(unittest.TestCase):
     def test_prep_data_encoded(self):
         seqs, labels=self.gtf.prep_data_encoded()
         breakpoint()
+    
+    def test_transcript(self):
+        for transcript in self.gtf.db.features_of_type('transcript'):
+            info=self.gtf.get_info_from_id(transcript.id)
+            print(info['transcript_biotype'][0])
+

@@ -9,14 +9,14 @@ from .utils import _auto_grouping
 # Lazy import 
 # import pysam
 
-'''
-Indexing rules:
-    SAM: 1-based  [ and length
-    However, pysam API gives 0-based [)
-    GTF: 1-based []
-    Bedgraph: 0-based [)
+# 
+# Indexing rules:
+#     SAM: 1-based  [ and length
+#     However, pysam API gives 0-based [)
+#     GTF: 1-based []
+#     Bedgraph: 0-based [)
 
-'''
+# 
 # Bedgraph example, separated by tabs:
 #  track type=bedGraph
 #  *	6	7	701
