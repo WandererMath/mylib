@@ -338,33 +338,8 @@ class GTF:
             print(f"Gene ID {gene_id} not found in the GTF file.")
 
 
-    def get_seq_from_gene_id(self, gene_id, offset1, offset2, fna_path):
-        '''
-        offset2> offest1
-        '''
-        warn("Deprecated. Chrom Problem", category=UserWarning)
-        start, direction=self.get_start_and_direction(gene_id)
-        if direction=='+':
-            return self.get_seq(start-offset2, start-offset1, direction,fna_path)
-        elif direction=='-':
-            return self.get_seq(start+offset1, start+offset2, direction,fna_path)
 
-    def get_gene_whole_seq(self, id, fna, extend=0):
-        # For gtf file, start end positions are inclusive
-        warn("Deprecated", category=UserWarning)
-        l, h, s= self.get_low_high_direction(id)
-        if s=='+':
-            h+=extend
-        else:
-            l-=extend
-        with open(fna, 'r') as fna_file:
-            for record in SeqIO.parse(fna_file, 'fasta'):
-                seq=record.seq[l:h+1]
-                seq=Seq(seq)
-        if s=="+":
-            return seq.transcribe()
-        else:
-            return seq.reverse_complement_rna()
+
 
 
 

@@ -1,1 +1,1 @@
-python -m unittest tests.test_gtf.TestGTF.test_prep_data_encoded
+python -m unittest tests.test_ribo.TestGTF.test_process_sam

@@ -14,7 +14,7 @@ def stacked_hist(labels, values, output):
     # labels = list(data.keys())
 
     # Plot stacked histogram
-    plt.hist(values, bins=36, stacked=True, label=labels)
+    plt.hist(values, bins=max(values[-1])-min(values[-1])+1, stacked=True, label=labels)
 
     plt.xlabel('Read Length')
     plt.ylabel('Frequency')
