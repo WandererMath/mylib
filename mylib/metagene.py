@@ -69,7 +69,10 @@ def _metagene_1_chrom(df, start_end_list, direction, Five_or_Three='5'):
                 next_gene_flag = True
             if next_gene_flag:
                 # Save previous gene's results
-                n= counter/gene_length *100
+                try:
+                    n= counter/gene_length *100
+                except UnboundLocalError:
+                    break
                 for offset in result_tmp:
                     if counter<100:
                         break
@@ -158,10 +161,10 @@ def metagene_analysis(gtf, bedgraph):
             _plot_metagene(result, chrom, DIRECTION, Five_or_Three)
 
 
-def metagene_analysis_all(gtf, folder_path):
+def metagene_analysis_all(gtf, folder_path, out_folder=None):
     folder_path=os.path.abspath(folder_path)
     samples=get_paths_ends_with_something(folder_path, '.bedgraph')
-    output_folder=os.path.join(os.path.dirname(folder_path), 'metagene2')
+    output_folder=os.path.join(os.path.dirname(folder_path), 'metagene' if out_folder is None else out_folder)
     os.makedirs(output_folder, exist_ok=True)
     for sample in samples:
         sample_name=os.path.basename(sample).split('.')[0]

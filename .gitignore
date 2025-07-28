@@ -3,3 +3,4 @@ examples
 .vscode
 */__pycache__
 */*.db
+data/*.txt

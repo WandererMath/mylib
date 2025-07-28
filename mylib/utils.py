@@ -1,6 +1,6 @@
 import os
 import bisect
-
+from intervaltree import IntervalTree, Interval
 
 def get_paths_ends_with_something(folder_path, suffix):
     return [os.path.abspath(os.path.join(folder_path, f)) for f in os.listdir(folder_path) if f.endswith(suffix)]
@@ -55,3 +55,11 @@ def rna_encoding(seq):
 
     # Transpose to get shape (4, 30)
     return one_hot.T
+
+def match2start(tree, x):
+    matches = tree[x]
+    if matches:
+        for m in matches:
+            return m.begin
+    else:
+        return None

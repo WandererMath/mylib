@@ -47,14 +47,14 @@ class Feature:
             self.name='Ribo-'+self.name
 
 
-def sam2bedgraph(sam_path, ribo=True, offset=14, cutoff=None):
+def sam2bedgraph(sam_path, ribo=True, offset=14, cutoff=None, output_folder=None):
     import pysam
     sam_path=os.path.abspath(sam_path)
     FIRST_LINE='track type=bedGraph\n'
     BASENAME=os.path.basename(sam_path).split('.')[0]
     DIR_NAME=os.path.join( os.path.dirname(sam_path),\
                           '..',\
-                        f"coverage{cutoff if cutoff is not None else ''}")
+                        f"coverage" if output_folder is None else output_folder)
     os.makedirs(DIR_NAME, exist_ok=True)
     prefix='Ribo-' if ribo else 'RNA-'
     OUTPUT_PLUS=os.path.join(DIR_NAME, prefix+BASENAME + '-plus.bedgraph')
@@ -62,7 +62,7 @@ def sam2bedgraph(sam_path, ribo=True, offset=14, cutoff=None):
 
     DIR_NAME_NORM=os.path.join( os.path.dirname(sam_path),\
                           '..',\
-                        f"coverage_norm{cutoff if cutoff is not None else ''}")
+                        f"coverage_norm" if output_folder is None else f"{output_folder}_norm_merged")
     os.makedirs(DIR_NAME_NORM, exist_ok=True)
     OUTPUT_PLUS_NORM=os.path.join(DIR_NAME_NORM, prefix+BASENAME + '-plus.bedgraph')
     OUTPUT_MINUS_NORM=os.path.join(DIR_NAME_NORM, prefix+BASENAME + '-minus.bedgraph')
@@ -132,47 +132,12 @@ def sam2bedgraph(sam_path, ribo=True, offset=14, cutoff=None):
 
 
 
-def bedgraph_for_all_samples(path, ribo=True, gtf: GTF=None, cutoff=None):
+def bedgraph_for_all_samples(path, ribo=True, gtf: GTF=None, cutoff=None, output_folder='coverage_norm_merged'):
     path=os.path.abspath(path)
     DIR_NAME=os.path.dirname(path)
-    OUTPUT_DIR=os.path.join(DIR_NAME, f'coverage_norm_merged{cutoff if cutoff is not None else ""}')
+    OUTPUT_DIR=os.path.join(DIR_NAME, output_folder)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    OUTPUT_DIR_METAGENE=os.path.join(DIR_NAME, 'metagene')
 
-    # Get Gene info for metagene analysis
-    # if ribo and gtf is not None:
-    #     GENES_INFO_START={}  # strand: chrom: list of starts
-    #     GENES_INFO_END={}    # strand: chrom: list of ends
-    #     GENES_INFO_START_ID={} # strand: chrom: gene_id: start: gene_id
-    #     GENES_INFO_END_ID={}   # strand: chrom: gene_id: end: gene_id
-        
-    #     os.makedirs(OUTPUT_DIR_METAGENE, exist_ok=True)
-    #     for gene in gtf.all_genes():
-    #         start, end, strand, chrom= gtf.get_gene_positions_strand_chrom(gene)
-    #         end-=1 # Making end inclusive
-    #         if strand not in GENES_INFO_START:
-    #             GENES_INFO_START[strand] = {}
-    #             GENES_INFO_START_ID[strand] = {}
-    #         if chrom not in GENES_INFO_START[strand]:
-    #             GENES_INFO_START[strand][chrom] = []
-    #             GENES_INFO_START_ID[strand][chrom] = {}
-    #         GENES_INFO_START[strand][chrom].append(start)
-    #         GENES_INFO_START_ID[strand][chrom][start] = gene 
-
-    #         if strand not in GENES_INFO_END:
-    #             GENES_INFO_END[strand] = {}
-    #             GENES_INFO_END_ID[strand] = {}
-    #         if chrom not in GENES_INFO_END[strand]:
-    #             GENES_INFO_END[strand][chrom] = []
-    #             GENES_INFO_END_ID[strand][chrom] = {}
-    #         GENES_INFO_END[strand][chrom].append(end)
-    #         GENES_INFO_END_ID[strand][chrom][end] = gene
-        
-    #     for GENE_INFO in [GENES_INFO_START, GENES_INFO_END]:
-    #         for strand in GENE_INFO:
-    #             for chrom in GENE_INFO[strand]:
-    #                 GENE_INFO[strand][chrom].sort()
-    ############################################################
     
     paths= get_paths_ends_with_something(path, '.txt')
     basenames=[os.path.basename(p).split('.')[0] for p in paths]
@@ -187,7 +152,7 @@ def bedgraph_for_all_samples(path, ribo=True, gtf: GTF=None, cutoff=None):
         for sample in samples:
             sam_path=paths[basenames.index(sample)]
             # Normalized bedgraph data
-            results.append(sam2bedgraph(sam_path, ribo=ribo, cutoff=cutoff))
+            results.append(sam2bedgraph(sam_path, ribo=ribo, cutoff=cutoff, output_folder=output_folder.replace('_merged', '') ))
 
         for result in results:
             for strand in result:
@@ -209,83 +174,6 @@ def bedgraph_for_all_samples(path, ribo=True, gtf: GTF=None, cutoff=None):
                 for chrom in merged_result[strand]:
                     for pos in merged_result[strand][chrom]:
                         f.write(f"{chrom}\t{pos}\t{pos+1}\t{merged_result[strand][chrom][pos]/num_samples}\n")
-
-
-        #############################################
-        # if (not ribo) or gtf is None:
-        #     print("Skipping metagene analysis for RNA-seq or no GTF provided.")
-        #     continue
-        # #  Metagene Analysis
-        # print(f"Performing metagene analysis for group {group}")
-        # POSITION_FEATURECOUNT={} # position: featureCount
-        # gene_count=Feature(os.path.join(DIR_NAME, 'feature', f"{group}1.txt"), ribo_seq=True).gene_count
-        # starts={} # offset: intensity
-        # stops={}
-        # WITHIN=100
-        # OUTSIDE=50
-        # for strand in merged_result:
-        #     if strand=='-':
-        #         continue
-        #     for chrom in merged_result[strand]:
-        #         if chrom not in gtf.fna.keys():
-        #             continue
-        #         for pos in merged_result[strand][chrom]:
-        #             target_start=closest_binary_search(GENES_INFO_START[strand][chrom], pos)
-        #             offset_start=pos- target_start
-        #             target_end=closest_binary_search(GENES_INFO_END[strand][chrom], pos)
-        #             offset_end= pos-target_end
-
-        #             if strand=='-':
-        #                 offset_start=-offset_start
-        #                 offset_end=-offset_end
-        #             if offset_start<=WITHIN and offset_start>=-OUTSIDE:
-        #                 if offset_start not in starts:
-        #                     starts[offset_start]=0
-        #                 try:
-        #                     starts[offset_start]+=merged_result[strand][chrom][pos]/max(gene_count[GENES_INFO_START_ID[strand][chrom][target_start]],1)
-        #                 except KeyError:
-        #                     pass
-        #             if offset_end<=OUTSIDE and offset_end>=-WITHIN:
-        #                 if offset_end not in stops:
-        #                     stops[offset_end]=0
-        #                 try:
-        #                     stops[offset_end]+=merged_result[strand][chrom][pos]/max(gene_count[GENES_INFO_END_ID[strand][chrom][target_end]], 1)
-        #                 except KeyError:
-        #                     pass
-        # X_START=list(range(-OUTSIDE, WITHIN+1))
-        # X_STOP=list(range(-WITHIN, OUTSIDE+1))
-        # Y_START=[]
-        # Y_STOP=[]
-        # for i in X_START:
-        #     if i not in starts:
-        #         Y_START.append(0)
-        #     else:
-        #         Y_START.append(starts[i])
-        # for i in X_STOP:
-        #     if i not in stops:
-        #         Y_STOP.append(0)
-        #     else:
-        #         Y_STOP.append(stops[i])
-        # # Create a figure with 1 row and 2 columns of subplots
-        # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 4))  # 1 row, 2 columns
-
-        # # Plot something on the left subplot
-        # ax1.plot(X_START, Y_START)
-        # ax1.scatter(X_START, Y_START, marker='x')
-        # ax1.set_title("5' End")
-        # for xpos in range(-50, 100+1, 3):  
-        #     ax1.axvline(x=xpos, color='gray', linestyle='--')
-
-        # # Plot something on the right subplot
-        # ax2.plot(X_STOP, Y_STOP)
-        # ax2.scatter(X_STOP, Y_STOP, marker='x')
-        # ax2.set_title("3' End")
-        # for xpos in range(-98, 48+1, 3):  
-        #     ax2.axvline(x=xpos, color='gray', linestyle='--')
-
-        # plt.tight_layout()   
-        # plt.savefig(os.path.join(OUTPUT_DIR_METAGENE, f"{group}.pdf"))
-        # plt.close()    
 
 
 def sam2distribution(path):
@@ -312,12 +200,15 @@ def sam2distribution_all_files(path):
     for p in get_paths_ends_with_something(path, '.txt'):
         sam2distribution(p)
 
-def filter_1_sam(path, threshold=23):
+def filter_1_sam(path, threshold=23, high_threshold=None):
     import pysam
 
     # Input/output files
     path = os.path.abspath(path)
-    OUTPUT_DIR= os.path.join(os.path.dirname(path),'..', f'bowtie{threshold}')
+    if high_threshold is None:
+        OUTPUT_DIR= os.path.join(os.path.dirname(path),'..', f'bowtie{threshold}')
+    else:
+        OUTPUT_DIR= os.path.join(os.path.dirname(path),'..', f'bowtie_{threshold}_{high_threshold}')
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
     output_sam = os.path.join(OUTPUT_DIR, os.path.basename(path))
@@ -326,14 +217,20 @@ def filter_1_sam(path, threshold=23):
     with pysam.AlignmentFile(path, "r") as infile, \
         pysam.AlignmentFile(output_sam, "w", template=infile) as outfile:
 
-        for read in infile:
-            if not read.is_unmapped and read.query_length > threshold:
-                outfile.write(read)
+        if high_threshold is None:
+            for read in infile:
+                if not read.is_unmapped and read.query_length >= threshold:
+                    outfile.write(read)
+        else:
+            for read in infile:
+                if not read.is_unmapped and read.query_length >= threshold\
+                    and read.query_length<=high_threshold:
+                    outfile.write(read)         
 
 
-def filter_sams(path, t=23):
+def filter_sams(path, t, ht=None):
     for p in get_paths_ends_with_something(path, '.txt'):
-        filter_1_sam(p, t)
+        filter_1_sam(p, t, ht)
 
 if __name__ == "__main__":
     print("This is the mylib/bedgraph.py module.")

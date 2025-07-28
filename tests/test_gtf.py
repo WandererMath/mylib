@@ -2,6 +2,8 @@ import unittest
 import random
 
 from mylib.gtf import GTF
+from mylib.bedgraph import filter_sams, bedgraph_for_all_samples
+from mylib.metagene import metagene_analysis_all
 
 class TestGTF(unittest.TestCase):
     def setUp(self):
@@ -37,3 +39,16 @@ class TestGTF(unittest.TestCase):
             info=self.gtf.get_info_from_id(transcript.id)
             print(info['transcript_biotype'][0])
 
+    def test_ml(self):
+        self.gtf.prepare_data()
+    
+    def test_sam(self):
+        SAM_FOLDER='/fs/ess/PAS2967/S21/Ribo-seq/bowtie_gene'
+        filter_sams(SAM_FOLDER, 23, 32)
+    
+    def test_bedgraph(self):
+        bedgraph_for_all_samples('/fs/ess/PAS2967/S21/Ribo-seq/bowtie_23_32', ribo=True, output_folder='coverge_norm_merged_23_32')
+    def test_metagene(self):
+        metagene_analysis_all(self.gtf, \
+            '/fs/ess/PAS2967/S21/Ribo-seq/coverge_23_32',\
+                'metagene_23_32')

@@ -1,5 +1,3 @@
-
-
 class Aligner_FS:
     def __init__(self, pairing_rule, target_seq):
         self.pairing_rule=pairing_rule 

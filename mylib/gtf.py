@@ -2,10 +2,12 @@ import os
 from dataclasses import dataclass
 from warnings import warn
 from random import random
+from .utils import *
 
 import pandas as pd
 from Bio import SeqIO
 from Bio.Seq import Seq
+from intervaltree import IntervalTree, Interval
 import gffutils
 import gffutils.attributes
 import gffutils.feature
@@ -160,12 +162,24 @@ class GTF:
         '''
         results = {'+': [], '-': []}
         for gene_id in self.all_genes():
-            start, strand = self.get_start_and_direction(gene_id)
+            gene_record=self.db[gene_id]
+            if gene_record.chrom == chrom:
+                results[gene_record.strand].append(gene_record.start-1 if gene_record.strand=='+' else gene_record.end)
+        return results
+    
+    def all_CDS_intervals(self, chrom):
+        '''
+            Return:
+                {'+':[int, ...], '-':[]}
+        '''
+        results = {'+': IntervalTree(), '-': IntervalTree()}
+        for gene_id in self.all_genes():
+            gene_record=self.db[gene_id]
+            start, end, strand=gene_record.start, gene_record.end, gene_record.strand
+
             if self.db[gene_id].chrom == chrom:
-                if strand == '+':
-                    results['+'].append(start)
-                elif strand == '-':
-                    results['-'].append(start)
+                results[strand].add(Interval(start-3, end+3))
+                
         return results
     
     def get_all_candidate_start_positions(self, chrom, strand):
@@ -173,11 +187,27 @@ class GTF:
         if strand=='+':
             return [i for i in range(len(fna) - 2)
             if fna[i:i+3] in START_CODONS]
-        
         elif strand=='-':
             START_CODONS_REVERSE_COMPLEMENT = [Seq(codon).reverse_complement_rna() for codon in START_CODONS]
             return [i+3 for i in range(len(fna) - 2)
             if fna[i:i+3] in START_CODONS_REVERSE_COMPLEMENT]
+        
+        else:
+            raise ValueError(f"Strand {strand} not recognized. Only '+' and '-' are allowed.")
+
+            
+    def get_all_candidate_start_positions_in_CDS(self, chrom, strand):
+        fna=self.fna[chrom]
+        tree=self.all_CDS_intervals(chrom)[strand]
+        #breakpoint()
+        if strand=='+':
+            return [i for i in range(len(fna) - 2)
+            if fna[i:i+3] in START_CODONS and match2start(tree,i) is not None]
+        
+        elif strand=='-':
+            START_CODONS_REVERSE_COMPLEMENT = [Seq(codon).reverse_complement_rna() for codon in START_CODONS]
+            return [i+3 for i in range(len(fna) - 2)
+            if fna[i:i+3] in START_CODONS_REVERSE_COMPLEMENT and match2start(tree,i) is not None]
         
         else:
             raise ValueError(f"Strand {strand} not recognized. Only '+' and '-' are allowed.")
@@ -224,12 +254,17 @@ class GTF:
             for strand in ['+', '-']:
                 position= self.get_all_candidate_start_positions(chrom, strand)
                 gene_position=tmp[strand]
+                #breakpoint()
                 # seqs+=[self.get_tir_by_position(p, chrom,  strand) for p in position if self.get_tir_by_position(p, chrom, strand) is not None]
                 # labels+=[1 if p in gene_position else 0 for p in position if self.get_tir_by_position(p, chrom, strand) is not None]
                 tmp_seqs=[]
                 tmp_labels=[]
                 for p in position:
+                    if (self.get_seq_from_to(p, p+3, strand, chrom)!='AUG' and strand=='+')\
+                        or (self.get_seq_from_to(p-3, p, strand, chrom)!='AUG' and strand=='-'):
+                            continue
                     seq=self.get_tir_by_position(p, chrom, strand)
+
                     if seq is not None:
                         label=1 if p in gene_position else 0
                         # Balance 
@@ -247,6 +282,41 @@ class GTF:
         seqs_encoded=[rna_encoding(seq) for seq in seqs]
         return seqs_encoded, labels
 
+    def prep_data_in_CDS_encoded(self):
+        """
+        Return:
+            [seqs], [labels]
+            label: 1 Gene, 0 Not Gene
+        """
+        seqs=[]
+        labels=[]
+        for chrom in self.fna:
+            tmp=self.all_start_positions(chrom)
+            for strand in ['+', '-']:
+                position= self.get_all_candidate_start_positions_in_CDS(chrom, strand)
+                gene_position=tmp[strand]
+                # seqs+=[self.get_tir_by_position(p, chrom,  strand) for p in position if self.get_tir_by_position(p, chrom, strand) is not None]
+                # labels+=[1 if p in gene_position else 0 for p in position if self.get_tir_by_position(p, chrom, strand) is not None]
+                tmp_seqs=[]
+                tmp_labels=[]
+                for p in position:
+                    if (self.get_seq_from_to(p, p+3, strand, chrom)!='AUG' and strand=='+')\
+                        or (self.get_seq_from_to(p-3, p, strand, chrom)!='AUG' and strand=='-'):
+                            continue
+                    seq=self.get_tir_by_position(p, chrom, strand)
+                    if seq is not None:
+                        label=1 if p in gene_position else 0
+                        # Balance 
+                        if label==1 or random()<0.0224*2.41: # 10% of non-gene sequences
+                            tmp_seqs.append(seq)
+                            tmp_labels.append(label)
+                seqs+=tmp_seqs
+                labels+=tmp_labels
+        assert len(labels)==len(seqs), f"Labels and sequences length mismatch: {len(labels)} != {len(seqs)}"
+        from mylib.utils import rna_encoding
+        seqs_encoded=[rna_encoding(seq) for seq in seqs]
+        return seqs_encoded, labels
+    
     def test(self):
         protein_coding=0
         non_protein_coding=0
@@ -316,8 +386,9 @@ class GTF:
         try:
             gene = self.db[gene_id]
             strand=self.db[gene_id].strand
+            #breakpoint()
             if strand=="+":
-                return gene.start-1, strand
+                return gene.start, strand
             else:
                 return gene.end, strand
             #print(f"The start position of gene {gene_id} is {start_position}")
