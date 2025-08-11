@@ -47,7 +47,7 @@ class Feature:
             self.name='Ribo-'+self.name
 
 
-def sam2bedgraph(sam_path, ribo=True, offset=14, cutoff=None, output_folder=None):
+def sam2bedgraph(sam_path, ribo=True, offset=14, lt=False, cutoff=None, output_folder=None):
     import pysam
     sam_path=os.path.abspath(sam_path)
     FIRST_LINE='track type=bedGraph\n'
@@ -74,7 +74,7 @@ def sam2bedgraph(sam_path, ribo=True, offset=14, cutoff=None, output_folder=None
             if cutoff is not None:
                 if not isinstance(read.reference_length, int):
                     continue
-                if read.reference_length < cutoff:
+                if (read.reference_length < cutoff and not lt) or (read.reference_length> cutoff and lt):
                     continue
             chrom, start, end = read.reference_name, read.reference_start, read.reference_end
             
@@ -132,7 +132,7 @@ def sam2bedgraph(sam_path, ribo=True, offset=14, cutoff=None, output_folder=None
 
 
 
-def bedgraph_for_all_samples(path, ribo=True, gtf: GTF=None, cutoff=None, output_folder='coverage_norm_merged'):
+def bedgraph_for_all_samples(path, ribo=True,lt=False, cutoff=None, output_folder='coverage_norm_merged'):
     path=os.path.abspath(path)
     DIR_NAME=os.path.dirname(path)
     OUTPUT_DIR=os.path.join(DIR_NAME, output_folder)
@@ -152,7 +152,7 @@ def bedgraph_for_all_samples(path, ribo=True, gtf: GTF=None, cutoff=None, output
         for sample in samples:
             sam_path=paths[basenames.index(sample)]
             # Normalized bedgraph data
-            results.append(sam2bedgraph(sam_path, ribo=ribo, cutoff=cutoff, output_folder=output_folder.replace('_merged', '') ))
+            results.append(sam2bedgraph(sam_path, ribo=ribo,lt=lt, cutoff=cutoff, output_folder=output_folder.replace('_merged', '') ))
 
         for result in results:
             for strand in result:
