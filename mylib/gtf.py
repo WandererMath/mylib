@@ -240,6 +240,18 @@ class GTF:
             if any(x in seq for x in ['Y', 'N', 'R']):
                 return None
             return str(seq.reverse_complement_rna())
+    def gene_to_tir(self, gene_id, l=-18, h=9):
+        """
+        Get the TIR sequence for a gene.
+        Args:
+            gene_id (str): The ID of the gene.
+            l (int): Length to extend to the left.
+            h (int): Length to extend to the right.
+        Returns:
+            str: The TIR sequence.
+        """
+        start, end, strand, chrom = self.get_gene_positions_strand_chrom(gene_id)
+        return self.get_tir_by_position(start if strand=='+' else end, chrom, strand, l, h)
     
     def prepare_data(self):
         """
