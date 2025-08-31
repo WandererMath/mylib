@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from warnings import warn
 from random import random
 from .utils import *
+from .rna import *
 
 import pandas as pd
 from Bio import SeqIO
@@ -329,6 +330,47 @@ class GTF:
         seqs_encoded=[rna_encoding(seq) for seq in seqs]
         return seqs_encoded, labels
     
+    def prep_structure_data(self):
+        # ray.init(num_cpus=N_CPU)
+        '''
+        encoded seq_structure, energies,  labels
+        '''
+        seqs=[]
+        labels=[]
+
+        for chrom in self.fna:
+            tmp=self.all_start_positions(chrom)
+            for strand in ['+', '-']:
+                position= self.get_all_candidate_start_positions(chrom, strand)
+                gene_position=tmp[strand]
+                #breakpoint()
+                # seqs+=[self.get_tir_by_position(p, chrom,  strand) for p in position if self.get_tir_by_position(p, chrom, strand) is not None]
+                # labels+=[1 if p in gene_position else 0 for p in position if self.get_tir_by_position(p, chrom, strand) is not None]
+                tmp_seqs=[]
+                tmp_labels=[]
+
+                for p in position:
+                    if (self.get_seq_from_to(p, p+3, strand, chrom)!='AUG' and strand=='+')\
+                        or (self.get_seq_from_to(p-3, p, strand, chrom)!='AUG' and strand=='-'):
+                            continue
+                    seq=self.get_tir_by_position(p, chrom, strand, l=-100, h=100)
+
+                    if seq is not None:
+                        label=1 if p in gene_position else 0
+                        # Balance 
+                        if label==1 or random()<0.0224: 
+                            tmp_seqs.append(seq)
+                            tmp_labels.append(label)
+
+                seqs+=tmp_seqs
+                labels+=tmp_labels
+        seqs = ray.get([ seq_to_structure_energy.remote(s) for s in seqs])
+        seqs, energies=np.array(seqs).T
+        seqs=[structure_encoding(s) for s in seqs]
+        seqs=np.array(seqs)
+        return seqs, energies, np.array(labels)
+    
+
     def test(self):
         protein_coding=0
         non_protein_coding=0

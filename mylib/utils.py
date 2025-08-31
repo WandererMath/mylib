@@ -1,6 +1,7 @@
 import os
 import bisect
 from intervaltree import IntervalTree, Interval
+import numpy as np
 
 def get_paths_ends_with_something(folder_path, suffix):
     return [os.path.abspath(os.path.join(folder_path, f)) for f in os.listdir(folder_path) if f.endswith(suffix)]
@@ -42,13 +43,27 @@ def _auto_grouping(samples, key= lambda x: x):
 
 
 def rna_encoding(seq):
-    import numpy as np
+
 
     # Define one-hot mapping
     mapping = {'A': [1, 0, 0, 0],
             'U': [0, 1, 0, 0],
             'G': [0, 0, 1, 0],
             'C': [0, 0, 0, 1]}
+
+    # One-hot encode each nucleotide
+    one_hot = np.array([mapping[nt] for nt in seq])  # shape (30, 4)
+
+    # Transpose to get shape (4, 30)
+    return one_hot.T
+
+
+def structure_encoding(seq):
+
+    # Define one-hot mapping
+    mapping = {'(': [1, 0, 0],
+            ')': [0, 1, 0],
+            '.': [0, 0, 1]}
 
     # One-hot encode each nucleotide
     one_hot = np.array([mapping[nt] for nt in seq])  # shape (30, 4)
