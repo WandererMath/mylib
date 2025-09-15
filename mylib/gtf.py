@@ -404,7 +404,7 @@ class GTF:
                     if (self.get_seq_from_to(p, p+3, strand, chrom)!='AUG' and strand=='+')\
                         or (self.get_seq_from_to(p-3, p, strand, chrom)!='AUG' and strand=='-'):
                             continue
-                    seq=self.get_tir_by_position(p, chrom, strand, l=-100, h=100)
+                    seq=self.get_tir_by_position(p, chrom, strand, l=-100, h=200)
 
                     if seq is not None:
                         label=1 if p in gene_position else 0
