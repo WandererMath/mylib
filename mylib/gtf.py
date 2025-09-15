@@ -416,13 +416,13 @@ class GTF:
 
                 seqs+=tmp_seqs
                 labels+=tmp_labels
-        seqs = ray.get([ seq_to_structure_energy.remote(s) for s in seqs])
-        seqs, energies=np.array(seqs).T
+        result = ray.get([ seq_to_structure_energy.remote(s) for s in seqs])
+        struct, energies=np.array(result).T
 
         gcs=[seq_gc_content(s) for s in seqs]
-        seqs=[structure_encoding(s) for s in seqs]
-        seqs=np.array(seqs)
-        return seqs, energies, np.array(labels), gcs 
+        struct=[structure_encoding(s) for s in struct]
+        struct=np.array(struct)
+        return struct, energies, np.array(labels), gcs 
     
 
     def test(self):
