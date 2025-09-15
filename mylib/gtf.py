@@ -18,6 +18,14 @@ START_CODONS=['AUG', 'GUG', 'UUG'] # AUG is the only one that codes for Methioni
 START_CODONS=['AUG']
 STOP_CODONS=['UAA', 'UAG', 'UGA']
 
+
+def seq_gc_content(seq):
+    c=seq.count('G')+seq.count('C')
+    total=len(seq)
+    return c/total
+
+
+
 class GTF:
     '''
     CDS as key
@@ -369,6 +377,51 @@ class GTF:
         seqs=[structure_encoding(s) for s in seqs]
         seqs=np.array(seqs)
         return seqs, energies, np.array(labels)
+
+
+
+
+    def prep_structure_data2(self):
+        # ray.init(num_cpus=N_CPU)
+        '''
+        encoded seq_structure, energies,  labels
+        '''
+        seqs=[]
+        labels=[]
+
+        for chrom in self.fna:
+            tmp=self.all_start_positions(chrom)
+            for strand in ['+', '-']:
+                position= self.get_all_candidate_start_positions(chrom, strand)
+                gene_position=tmp[strand]
+                #breakpoint()
+                # seqs+=[self.get_tir_by_position(p, chrom,  strand) for p in position if self.get_tir_by_position(p, chrom, strand) is not None]
+                # labels+=[1 if p in gene_position else 0 for p in position if self.get_tir_by_position(p, chrom, strand) is not None]
+                tmp_seqs=[]
+                tmp_labels=[]
+
+                for p in position:
+                    if (self.get_seq_from_to(p, p+3, strand, chrom)!='AUG' and strand=='+')\
+                        or (self.get_seq_from_to(p-3, p, strand, chrom)!='AUG' and strand=='-'):
+                            continue
+                    seq=self.get_tir_by_position(p, chrom, strand, l=-100, h=100)
+
+                    if seq is not None:
+                        label=1 if p in gene_position else 0
+                        # Balance 
+                        if label==1 or random()<0.0224: 
+                            tmp_seqs.append(seq)
+                            tmp_labels.append(label)
+
+                seqs+=tmp_seqs
+                labels+=tmp_labels
+        seqs = ray.get([ seq_to_structure_energy.remote(s) for s in seqs])
+        seqs, energies=np.array(seqs).T
+
+        gcs=[seq_gc_content(s) for s in seqs]
+        seqs=[structure_encoding(s) for s in seqs]
+        seqs=np.array(seqs)
+        return seqs, energies, np.array(labels), gcs 
     
 
     def test(self):
