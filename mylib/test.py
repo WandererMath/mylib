@@ -18,9 +18,16 @@ gtf= GTF(GTF_FILE, FNA)
 # print(seq)
 # print(structure)  # dot-bracket notation
 # print("MFE (kcal/mol):", mfe)
-N_CPU=multiprocessing.cpu_count()
-print(N_CPU)
-ray.init(num_cpus=N_CPU)
-seqs, energies, labels=gtf.prep_structure_data()
-print(seqs.shape, energies.shape, labels.shape)
-ray.shutdown()
+
+
+
+# N_CPU=multiprocessing.cpu_count()
+# print(N_CPU)
+# ray.init(num_cpus=N_CPU)
+# seqs, energies, labels=gtf.prep_structure_data()
+# print(seqs.shape, energies.shape, labels.shape)
+# ray.shutdown()
+
+from .gtf import seq_gc_content
+x=seq_gc_content('ATGCGC')
+print(x)

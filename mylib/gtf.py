@@ -20,6 +20,7 @@ STOP_CODONS=['UAA', 'UAG', 'UGA']
 
 
 def seq_gc_content(seq):
+    seq=str(seq)
     c=seq.count('G')+seq.count('C')
     total=len(seq)
     return c/total
