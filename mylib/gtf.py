@@ -34,6 +34,7 @@ class GTF:
     '''
     db: gffutils.FeatureDB
     fna: Seq
+    fna_description: dict
     def __init__(self, gtf_file, fna_file=None):
         gtf_path_splitted=gtf_file.split('.')
         gtf_path_splitted[-1]='db'
@@ -46,9 +47,11 @@ class GTF:
     
         if fna_file is not None:
             self.fna={}
+            self.fna_description={}
             with open(fna_file, 'r') as fna_file:
                 for record in SeqIO.parse(fna_file, 'fasta'):
                     self.fna[record.name]=Seq(record.seq.transcribe())
+                    self.fna_description[record.name]=record.description
 
     def all_genes(self):
         """
