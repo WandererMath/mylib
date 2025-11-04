@@ -35,7 +35,7 @@ class GTF:
     db: gffutils.FeatureDB
     fna: Seq
     fna_description: dict
-    def __init__(self, gtf_file, fna_file=None):
+    def __init__(self, gtf_file, fna_file=None, id_spec={'CDS':'gene_id', 'transcript': 'gene_id'}):
         gtf_path_splitted=gtf_file.split('.')
         gtf_path_splitted[-1]='db'
         db_path=".".join(gtf_path_splitted)
@@ -43,7 +43,7 @@ class GTF:
             self.db = gffutils.FeatureDB(db_path, keep_order=True)
         else:
             self.db = gffutils.create_db(gtf_file, dbfn=db_path, force=True, keep_order=True, merge_strategy='merge', \
-                                         id_spec={'CDS':'gene_id', 'transcript': 'gene_id'})
+                                         id_spec=id_spec)
     
         if fna_file is not None:
             self.fna={}
