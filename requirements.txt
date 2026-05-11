@@ -1,0 +1,5 @@
+pandas
+matplotlib
+gffutils
+biopython
+viennaRNA
