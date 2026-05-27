@@ -59,7 +59,7 @@ class GTF:
             All gene IDs
         """
         gene_symbols=[]
-        for feature in self.db.features_of_type('CDS'):
+        for feature in self.db.features_of_type('gene'):
             gene_symbol = feature.attributes.get('gene_id', [None])[0]  # Using [None] as fallback in case the attribute is missing
             if gene_symbol:
                 gene_symbols.append(gene_symbol)
