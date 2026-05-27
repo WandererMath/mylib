@@ -68,7 +68,7 @@ class GTF:
 
     def id2name(self, gene_id):
         gene_feature = self.db[gene_id]
-        return gene_feature.attributes.get('locus_tag', [None])[0] 
+        return gene_feature.attributes.get('gene', [None])[0] 
     
     def get_info_from_id(self, gene_id):
         '''
