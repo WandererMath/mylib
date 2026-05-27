@@ -50,7 +50,7 @@ class GTF:
             self.fna_description={}
             with open(fna_file, 'r') as fna_file:
                 for record in SeqIO.parse(fna_file, 'fasta'):
-                    self.fna[record.name]=Seq(record.seq.transcribe())
+                    self.fna[record.name]=Seq(record.seq)
                     self.fna_description[record.name]=record.description
 
     def all_genes(self):
