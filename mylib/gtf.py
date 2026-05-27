@@ -266,6 +266,17 @@ class GTF:
         start, end, strand, chrom = self.get_gene_positions_strand_chrom(gene_id)
         return self.get_tir_by_position(start if strand=='+' else end, chrom, strand, l, h)
     
+    def get_CDS(self, gene_id, a=25, b=25):
+        start, end, strand, chrom= self.get_gene_positions_strand_chrom(gene_id)
+        if strand == '+':
+            return self.get_seq_from_to(start - a, end + b, strand, chrom)
+        elif strand == '-':
+            return self.get_seq_from_to(start - b, end + a, strand, chrom)
+        else:
+            raise Exception(f"Strand {strand} not recognized. Only '+' and '-' are allowed.")
+
+
+
     def prepare_data(self):
         """
         Return:
@@ -306,6 +317,9 @@ class GTF:
         from mylib.utils import rna_encoding
         seqs_encoded=[rna_encoding(seq) for seq in seqs]
         return seqs_encoded, labels
+
+
+
 
     def prep_data_in_CDS_encoded(self):
         """
